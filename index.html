@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0c0f">
+<title>Tontreffer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Bewusst nur ein Thema, dasselbe dunkle Panel wie der Mikrotonale Synth. */
+  :root {
+    color-scheme: dark;
+    --bg: #0c0c0f;
+    --panel: #141417;
+    --panel-2: #1c1c21;
+    --inset: #0f0f12;
+    --line: #26262c;
+    --line-2: #383840;
+    --text: #e9e9ee;
+    --muted: #a3a3ae;
+    --dim: #6d6d78;
+    --accent: #4b8df8;
+    --accent-hi: #8fb9ff;
+    --accent-strong: #2e6be0;
+    --accent-soft: rgba(75, 141, 248, .13);
+    --good: #3cc183;
+    --good-soft: rgba(60, 193, 131, .16);
+    --ji: #bf8424;
+    --err: #f19a8a;
+    --f-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --f-label: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+    --f-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  }
+  [hidden] { display: none !important; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 var(--f-ui);
+    -webkit-font-smoothing: antialiased;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .wrap {
+    max-width: 980px; margin: 0 auto;
+    padding-inline: clamp(16px, 4vw, 32px); padding-block: 20px 56px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .top h1 { margin: 0; font: 700 clamp(32px, 7vw, 46px)/1 var(--f-label); text-transform: uppercase; letter-spacing: .02em; }
+  .top h1 span { color: var(--accent); }
+  .summary { margin: 6px 0 0; color: var(--muted); font: 500 13px/1.4 var(--f-mono); font-variant-numeric: tabular-nums; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .lbl { font: 600 12px/1.2 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .readout { margin: 0; font: 500 13px/1.45 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hint { margin: 0; font-size: 13px; color: var(--muted); max-width: 72ch; }
+  .warn { margin: 0; padding: 10px 12px; border: 1px solid rgba(241, 154, 138, .4); border-radius: 8px; background: rgba(241, 154, 138, .08); color: var(--err); font-size: 14px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px;
+    font: 600 14px/1 var(--f-ui); padding: 10px 16px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line-2); background: var(--panel-2); color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:disabled { opacity: .45; cursor: default; border-color: var(--line-2); }
+  .btn.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: #ffffff; }
+  .btn.primary:hover { background: #3a78ec; }
+  .btn.rec { background: #b8323a; border-color: #b8323a; color: #fff; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  .seg { display: flex; flex-wrap: wrap; gap: 3px; padding: 3px; background: var(--inset); border: 1px solid var(--line-2); border-radius: 8px; }
+  .seg button { flex: 1 0 auto; border: 0; background: none; color: var(--muted); font: 600 13px/1 var(--f-ui); padding: 10px 12px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+  .seg button:hover { color: var(--text); }
+  .seg button:disabled { opacity: .4; cursor: default; }
+  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-2), inset 0 -2px 0 var(--accent); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 18px; }
+  select {
+    appearance: none; -webkit-appearance: none; min-width: 0; min-height: 42px;
+    background: var(--inset) url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3ae' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") no-repeat right 9px center / 14px;
+    border: 1px solid var(--line-2); border-radius: 6px; color: var(--text);
+    font: 500 15px/1.3 var(--f-ui); padding: 8px 32px 8px 10px; cursor: pointer;
+  }
+  select:focus { border-color: var(--accent); outline: none; }
+  option { background: var(--inset); color: var(--text); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+  .toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; user-select: none; position: relative; min-height: 42px; }
+  .toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .sw { position: relative; flex: none; width: 40px; height: 22px; border-radius: 22px; background: var(--line-2); border: 1px solid #4a4a54; }
+  .sw::before { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--text); transition: transform .2s; }
+  .toggle input:checked + .sw { background: var(--accent-strong); border-color: var(--accent); }
+  .toggle input:checked + .sw::before { transform: translateX(18px); background: #fff; }
+  .toggle input:focus-visible + .sw { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .toggle small { display: block; color: var(--dim); font-size: 12px; font-weight: 400; }
+
+  /* Live-Anzeige */
+  .live { gap: 12px; }
+  .live-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 20px; }
+  .hz-big { font: 700 clamp(40px, 11vw, 64px)/1 var(--f-label); letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+  .hz-big small { font: 600 18px var(--f-label); color: var(--muted); margin-left: 4px; letter-spacing: .1em; }
+  .hz-big.off { color: var(--dim); }
+  .level { display: flex; flex-direction: column; gap: 6px; width: min(240px, 100%); }
+  .lvl-track { position: relative; height: 8px; border-radius: 4px; background: var(--inset); border: 1px solid var(--line-2); overflow: hidden; }
+  #lv-level { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); }
+  #lv-gate { position: absolute; top: -1px; bottom: -1px; width: 2px; background: var(--muted); }
+  .lv-grid { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 16px; }
+  .lv-grid dt { font: 600 12px/1.2 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .lv-grid dd { margin: 4px 0 0; font: 500 17px/1.3 var(--f-mono); font-variant-numeric: tabular-nums; }
+
+  /* Reiter */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  .tabs button { border: 0; background: none; color: var(--muted); font: 600 15px/1 var(--f-label); letter-spacing: .12em; text-transform: uppercase; padding: 12px 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+
+  /* Treffen */
+  .stepper { display: flex; align-items: stretch; gap: 0; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; background: var(--inset); }
+  .stepper button { width: 44px; min-height: 42px; border: 0; background: var(--panel-2); color: var(--text); font: 600 20px/1 var(--f-ui); cursor: pointer; }
+  .stepper button:hover { color: var(--accent-hi); }
+  .stepper output { display: grid; place-items: center; min-width: 120px; padding: 0 12px; font: 600 16px var(--f-mono); }
+  .dev-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px 22px; }
+  @media (max-width: 560px) { .dev-row { grid-template-columns: minmax(0, 1fr); } }
+  .dev-big { font: 700 clamp(44px, 12vw, 72px)/1 var(--f-label); font-variant-numeric: tabular-nums; min-width: 4.2ch; color: var(--dim); }
+  .dev-big.in { color: var(--good); }
+  .dev-big.out { color: var(--text); }
+  .meter { position: relative; height: 54px; }
+  .m-track { position: absolute; left: 0; right: 0; top: 14px; height: 14px; border-radius: 7px; background: var(--inset); border: 1px solid var(--line-2); }
+  .m-zone { position: absolute; top: 14px; height: 14px; background: var(--good-soft); border-left: 1px solid var(--good); border-right: 1px solid var(--good); }
+  .m-mid { position: absolute; left: 50%; top: 8px; height: 26px; width: 2px; margin-left: -1px; background: var(--accent); }
+  .m-needle { position: absolute; top: 4px; width: 4px; height: 34px; margin-left: -2px; border-radius: 2px; background: var(--text); box-shadow: 0 0 0 2px var(--panel); transition: left .06s linear; }
+  .m-needle.in { background: var(--good); }
+  .m-needle.off { opacity: 0; }
+  .m-scale { position: absolute; left: 0; right: 0; top: 36px; display: flex; justify-content: space-between; font: 500 11px var(--f-mono); color: var(--dim); }
+  .status { margin: 0; min-height: 1.6em; font: 600 15px/1.4 var(--f-ui); color: var(--muted); }
+  .status.good { color: var(--good); }
+  canvas.plot { display: block; width: 100%; height: 240px; background: var(--inset); border: 1px solid var(--line); border-radius: 8px; touch-action: pan-y; }
+  #rec-canvas { height: 220px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font: 13px/1.35 var(--f-mono); font-variant-numeric: tabular-nums; }
+  th { font: 600 12px var(--f-label); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 6px 10px 8px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+  td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; padding-left: 4px; }
+  td .sub { color: var(--dim); }
+  .good-t { color: var(--good); }
+  .empty td { color: var(--dim); text-align: left; }
+  .badge { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--accent); font: 600 11px var(--f-mono); }
+  tr.root .badge { background: var(--accent-strong); border-color: var(--accent-strong); }
+
+  /* Skala */
+  .result { display: flex; flex-direction: column; gap: 14px; }
+  .result h3 { margin: 6px 0 0; font: 600 15px/1.2 var(--f-label); letter-spacing: .14em; text-transform: uppercase; color: var(--text); }
+  .result-grid { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .result-grid { grid-template-columns: minmax(0, 1fr); } }
+  #ring { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto; }
+  .r-ring { fill: none; stroke: var(--line-2); }
+  .r-tick { stroke: var(--dim); }
+  .r-ji { fill: var(--ji); }
+  .r-ji-t { fill: var(--muted); font: 500 9.5px var(--f-mono); text-anchor: middle; dominant-baseline: central; }
+  .r-poly { fill: var(--accent-soft); stroke: var(--accent); stroke-opacity: .45; }
+  .r-dot circle { fill: var(--panel); stroke: var(--accent); stroke-width: 2; }
+  .r-dot.root circle { fill: var(--accent-strong); }
+  .r-dot text { fill: var(--text); font: 600 10px var(--f-mono); text-anchor: middle; dominant-baseline: central; }
+  .r-c1 { fill: var(--text); font: 700 22px var(--f-label); text-anchor: middle; }
+  .r-c2 { fill: var(--muted); font: 500 11px var(--f-mono); text-anchor: middle; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted); }
+  .legend li { display: inline-flex; align-items: center; gap: 7px; }
+  .lg-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--accent); background: var(--panel); }
+  .lg-ji { width: 8px; height: 8px; background: var(--ji); transform: rotate(45deg); }
+  .lg-tick { width: 2px; height: 11px; background: var(--dim); }
+  .lg-good { width: 12px; height: 10px; background: var(--good); border-radius: 2px; }
+  .lg-acc { width: 12px; height: 10px; background: var(--accent); border-radius: 2px; }
+  .lg-dim { width: 12px; height: 10px; background: var(--line-2); border-radius: 2px; }
+  #edo-chart { display: block; width: 100%; height: 170px; }
+  .e-bar { fill: var(--line-2); }
+  .e-bar.ok { fill: var(--good); }
+  .e-bar.mid { fill: var(--accent); }
+  .e-axis { stroke: var(--line-2); }
+  .e-ref { stroke: var(--good); stroke-opacity: .6; }
+  .e-t { fill: var(--dim); font: 10.5px var(--f-mono); }
+  pre { margin: 0; max-height: 200px; overflow: auto; background: var(--inset); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12px/1.5 var(--f-mono); color: var(--muted); }
+
+  .explain { display: flex; flex-direction: column; gap: 8px; color: var(--muted); font-size: 14px; max-width: 76ch; }
+  .explain p { margin: 0; }
+  .explain code { font: 13px var(--f-mono); color: var(--text); }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Ton<span>treffer</span></h1>
+      <p class="summary" id="summary"></p>
+    </div>
+    <button class="btn primary" type="button" id="btn-mic">Mikrofon starten</button>
+  </header>
+  <p class="warn" id="mic-error" role="alert" hidden></p>
+
+  <section class="panel live" aria-label="Was gerade gesungen wird">
+    <div class="live-top">
+      <div class="hz-big off" id="lv-hz-wrap"><span id="lv-hz">—</span><small>Hz</small></div>
+      <div class="level">
+        <span class="lbl">Pegel <span id="lv-db"></span></span>
+        <div class="lvl-track"><div id="lv-level"></div><div id="lv-gate"></div></div>
+      </div>
+    </div>
+    <dl class="lv-grid">
+      <div><dt>Nächster Rasterschritt</dt><dd id="lv-step">—</dd></div>
+      <div><dt>Verhältnis zum Grundton</dt><dd id="lv-ratio">—</dd></div>
+      <div><dt>12-TET</dt><dd id="lv-12">—</dd></div>
+    </dl>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Bereiche">
+    <button type="button" role="tab" id="tab-hit" aria-controls="pane-hit" aria-selected="true">Ton treffen</button>
+    <button type="button" role="tab" id="tab-scale" aria-controls="pane-scale" aria-selected="false">Skala finden</button>
+    <button type="button" role="tab" id="tab-set" aria-controls="pane-set" aria-selected="false">Einstellungen</button>
+  </nav>
+
+  <!-- Ton treffen -->
+  <section class="panel" id="pane-hit" role="tabpanel" aria-labelledby="tab-hit">
+    <div class="row">
+      <div class="field">
+        <span class="lbl" id="l-source">Ziele aus</span>
+        <div class="seg" role="group" aria-labelledby="l-source" id="seg-source">
+          <button type="button" data-v="edo">Raster</button>
+          <button type="button" data-v="mine">Meine Skala</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl" id="l-target">Ziel</span>
+        <div class="stepper" role="group" aria-labelledby="l-target">
+          <button type="button" id="tg-down" aria-label="Einen Schritt tiefer">−</button>
+          <output id="tg-label"></output>
+          <button type="button" id="tg-up" aria-label="Einen Schritt höher">+</button>
+        </div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="ctl-random"><span class="sw" aria-hidden="true"></span><span>Zufall<small>nach jedem Treffer ein neues Ziel</small></span></label>
+      <button class="btn" type="button" id="btn-play">Ziel anhören</button>
+    </div>
+    <p class="readout" id="tg-info"></p>
+
+    <div class="dev-row">
+      <div class="dev-big" id="dev-big" aria-live="off">—</div>
+      <div class="meter" aria-hidden="true">
+        <div class="m-track"></div>
+        <div class="m-zone" id="m-zone"></div>
+        <div class="m-mid"></div>
+        <div class="m-needle off" id="m-needle"></div>
+        <div class="m-scale"><span id="m-lo"></span><span>0 ¢</span><span id="m-hi"></span></div>
+      </div>
+    </div>
+    <p class="status" id="hit-status" aria-live="polite"></p>
+
+    <canvas class="plot" id="trace" aria-label="Tonhöhe der letzten acht Sekunden relativ zum Ziel"></canvas>
+    <ul class="legend">
+      <li><i class="lg-acc"></i>Ziel</li>
+      <li><i class="lg-good"></i>Bereich ±<span id="lg-tol"></span> ¢</li>
+      <li><i class="lg-dim"></i>Nachbarschritte des Rasters</li>
+      <li><i class="lg-tick"></i>12-TET</li>
+    </ul>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ziel</th><th>Mitte<span class="sub"> ¢</span></th><th>Streuung</th><th>Zeit bis Treffer</th></tr></thead>
+        <tbody id="hits"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Skala finden -->
+  <section class="panel" id="pane-scale" role="tabpanel" aria-labelledby="tab-scale" hidden>
+    <p class="hint">Sing einzelne Töne, jeden etwa eine Sekunde lang, mit einer kurzen Pause dazwischen. Wiederholen schadet nicht: Gleiche Töne werden zusammengefasst, Oktaven auch. Der erste Ton ist der Bezug, wenn du nichts anderes einstellst.</p>
+    <div class="row">
+      <div class="field">
+        <span class="lbl" id="l-ref">Bezugston</span>
+        <div class="seg" role="group" aria-labelledby="l-ref" id="seg-ref">
+          <button type="button" data-v="first">Erster Ton</button>
+          <button type="button" data-v="lowest">Tiefster Ton</button>
+          <button type="button" data-v="root">Grundton</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl" id="l-merge">Zusammenfassen bis</span>
+        <div class="seg" role="group" aria-labelledby="l-merge" id="seg-merge">
+          <button type="button" data-v="20">20 ¢</button>
+          <button type="button" data-v="35">35 ¢</button>
+          <button type="button" data-v="50">50 ¢</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl" id="l-mindur">Ton mindestens</span>
+        <div class="seg" role="group" aria-labelledby="l-mindur" id="seg-mindur">
+          <button type="button" data-v="0.2">0.2 s</button>
+          <button type="button" data-v="0.3">0.3 s</button>
+          <button type="button" data-v="0.5">0.5 s</button>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" type="button" id="btn-rec">Aufnahme starten</button>
+      <button class="btn" type="button" id="btn-clear">Verwerfen</button>
+    </div>
+    <p class="status" id="rec-status" aria-live="polite"></p>
+    <canvas class="plot" id="rec-canvas" aria-label="Tonhöhe der Aufnahme mit den erkannten Tönen"></canvas>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Hz</th><th>12-TET</th><th>Dauer</th><th>Streuung</th><th>Vibrato</th></tr></thead>
+        <tbody id="notes-body"></tbody>
+      </table>
+    </div>
+
+    <div class="result" id="result" hidden>
+      <h3>Deine Skala</h3>
+      <p class="readout" id="res-info"></p>
+      <div class="result-grid">
+        <div>
+          <svg id="ring" viewBox="0 0 320 320" role="img" aria-label="Deine Skala auf dem Oktavkreis"></svg>
+          <ul class="legend">
+            <li><i class="lg-dot"></i>deine Stufe</li>
+            <li><i class="lg-ji"></i>einfacher Bruch</li>
+            <li><i class="lg-tick"></i>12-TET ab deinem Bezugston</li>
+          </ul>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Stufe</th><th>¢</th><th>Abstand ↑</th><th>gesungen</th><th>Streuung</th><th>Bruch ≈</th><th>12-TET</th><th>Hz</th></tr></thead>
+            <tbody id="deg-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3>Welches Raster passt</h3>
+      <p class="readout" id="edo-text"></p>
+      <svg id="edo-chart" role="img" aria-label="Größter Fehler deiner Stufen in jedem Raster von 5 bis 72 Schritten pro Oktave"></svg>
+      <ul class="legend">
+        <li><i class="lg-good"></i>alle Stufen höchstens 10 ¢ daneben</li>
+        <li><i class="lg-acc"></i>höchstens 20 ¢</li>
+        <li><i class="lg-dim"></i>mehr, oder zwei Stufen auf demselben Schritt</li>
+      </ul>
+
+      <div class="btn-row">
+        <button class="btn" type="button" id="btn-listen">Anhören</button>
+        <button class="btn primary" type="button" id="btn-use">Zum Üben verwenden</button>
+        <button class="btn" type="button" id="btn-scl">.scl speichern</button>
+        <button class="btn" type="button" id="btn-ascl">.ascl für Live 12</button>
+      </div>
+      <pre id="scl-preview" tabindex="0" aria-label="Inhalt der Scala-Datei"></pre>
+    </div>
+  </section>
+
+  <!-- Einstellungen -->
+  <section class="panel" id="pane-set" role="tabpanel" aria-labelledby="tab-set" hidden>
+    <div class="row">
+      <div class="field">
+        <label class="lbl" for="ctl-edo">Raster (Schritte pro Oktave)</label>
+        <select id="ctl-edo"></select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="ctl-root">Grundton</label>
+        <select id="ctl-root"></select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="ctl-oct">Oktave</label>
+        <select id="ctl-oct"></select>
+      </div>
+    </div>
+    <p class="readout" id="root-info"></p>
+    <div class="row">
+      <div class="field">
+        <span class="lbl" id="l-tol">Treffer-Bereich</span>
+        <div class="seg" role="group" aria-labelledby="l-tol" id="seg-tol">
+          <button type="button" data-v="5">±5 ¢</button>
+          <button type="button" data-v="10">±10 ¢</button>
+          <button type="button" data-v="20">±20 ¢</button>
+          <button type="button" data-v="30">±30 ¢</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl" id="l-hold">Halten</span>
+        <div class="seg" role="group" aria-labelledby="l-hold" id="seg-hold">
+          <button type="button" data-v="0.3">0.3 s</button>
+          <button type="button" data-v="0.6">0.6 s</button>
+          <button type="button" data-v="1">1 s</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl" id="l-range">Zufall über</span>
+        <div class="seg" role="group" aria-labelledby="l-range" id="seg-range">
+          <button type="button" data-v="1">1 Oktave</button>
+          <button type="button" data-v="2">2 Oktaven</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <label class="toggle"><input type="checkbox" id="ctl-octfree"><span class="sw" aria-hidden="true"></span><span>Oktave egal<small>ein Ziel zählt auch eine oder mehrere Oktaven tiefer oder höher</small></span></label>
+    </div>
+    <div class="field" style="max-width: 420px">
+      <label class="lbl" for="ctl-gate">Empfindlichkeit: leiser als <span id="gate-out"></span> wird ignoriert</label>
+      <input type="range" id="ctl-gate" min="-80" max="-25" step="1">
+    </div>
+
+    <div class="explain">
+      <span class="lbl">So misst die App</span>
+      <p>Das Mikrofonsignal wird etwa 50-mal pro Sekunde in Blöcken von <span id="info-block">2048 Samples</span> ausgewertet. Für jede Verschiebung τ misst die App, wie sehr sich das Signal von sich selbst unterscheidet: <code>d(τ) = Σ (x_j − x_{j+τ})²</code>. Bei der Periode T des Tons ist d fast null, die Frequenz ist <code>f = Abtastrate / T</code>. Bruchteile eines Samples kommen aus einer Parabel durch die drei Werte um das Minimum (YIN-Verfahren, de Cheveigné &amp; Kawahara 2002). Bei einem sauberen Ton ist das auf weniger als 1 ¢ genau.</p>
+      <p>Abweichungen stehen in Cent: <code>1200 · log₂(f / f_Ziel)</code>. 100 ¢ sind ein 12-TET-Halbton, 1200 ¢ eine Oktave.</p>
+      <p>Echo-Unterdrückung, Rauschfilter und automatische Pegelanpassung des Browsers sind ausgeschaltet, weil sie das Signal verändern.</p>
+      <p>Ein gesungener Ton wird als Ton gezählt, wenn seine Tonhöhe weniger als 45 ¢ um ihre laufende Mitte schwankt. Vibrato-Ausschläge, die zurückkommen, gehören dazu. Einschwingen und Ausklang (je 15 %) zählen nicht zur Tonhöhe. Mit Vibrato ist die Mitte der Mittelwert, ohne Vibrato der Median.</p>
+    </div>
+  </section>
+</div>
+
+<script src="pitch.js"></script>
+<script>
+(() => {
+  'use strict';
+  const T = window.Tonhoehe;
+  const $ = (id) => document.getElementById(id);
+  const { mod, median, note12, nearestRatio } = T;
+  const NAMES = T.NAMES;
+  const MINUS = '−';
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const signed = (x, d = 1) => {
+    const r = Number(x.toFixed(d));
+    if (r === 0) return '±' + (0).toFixed(d);
+    return (r > 0 ? '+' : MINUS) + Math.abs(r).toFixed(d);
+  };
+  const css = getComputedStyle(document.documentElement);
+  const C = {};
+  ['bg', 'inset', 'line', 'line-2', 'text', 'muted', 'dim', 'accent', 'accent-hi', 'good', 'ji'].forEach((k) => { C[k] = css.getPropertyValue('--' + k).trim(); });
+
+  // ---------- Einstellungen ----------
+  const KEY = 'tontreffer.v1';
+  const DEFAULTS = {
+    edo: 12, root: 9, rootOct: 3, tol: 10, hold: 0.6, octFree: true, gate: -55,
+    source: 'edo', step: 0, random: false, range: 1,
+    refMode: 'first', merge: 35, minDur: 0.3, tab: 'hit',
+  };
+  function load() {
+    const s = { ...DEFAULTS };
+    let mine = null;
+    try {
+      const o = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (o) {
+        for (const k of Object.keys(DEFAULTS)) if (typeof o[k] === typeof DEFAULTS[k]) s[k] = o[k];
+        if (o.mine && typeof o.mine.fref === 'number' && Array.isArray(o.mine.degrees) && o.mine.degrees.length) mine = o.mine;
+      }
+    } catch (_) { /* ohne Speicher */ }
+    s.edo = clamp(Math.round(s.edo), 5, 72);
+    s.root = clamp(Math.round(s.root), 0, 11);
+    s.rootOct = clamp(Math.round(s.rootOct), 1, 5);
+    if (![5, 10, 20, 30].includes(s.tol)) s.tol = 10;
+    if (![0.3, 0.6, 1].includes(s.hold)) s.hold = 0.6;
+    if (![1, 2].includes(s.range)) s.range = 1;
+    if (![20, 35, 50].includes(s.merge)) s.merge = 35;
+    if (![0.2, 0.3, 0.5].includes(s.minDur)) s.minDur = 0.3;
+    if (!['first', 'lowest', 'root'].includes(s.refMode)) s.refMode = 'first';
+    if (!['hit', 'scale', 'set'].includes(s.tab)) s.tab = 'hit';
+    s.gate = clamp(Math.round(s.gate), -80, -25);
+    s.step = Math.round(s.step) || 0;
+    if (s.source === 'mine' && !mine) s.source = 'edo';
+    if (!['edo', 'mine'].includes(s.source)) s.source = 'edo';
+    return { s, mine };
+  }
+  const loaded = load();
+  const S = loaded.s;
+  let mine = loaded.mine;
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify({ ...S, mine })); } catch (_) { /* egal */ }
+  }
+
+  // ---------- Bezug, Raster, Ziel ----------
+  const settingsRoot = () => 440 * Math.pow(2, (S.root - 9) / 12) * Math.pow(2, S.rootOct - 4);
+  const useMine = () => S.source === 'mine' && !!mine;
+  const rootFreq = () => (useMine() ? mine.fref : settingsRoot());
+  const gridSize = () => (useMine() ? mine.degrees.length : S.edo);
+  function gridCents(idx) {
+    if (useMine()) {
+      const n = mine.degrees.length;
+      return mine.degrees[mod(idx, n)].c + 1200 * Math.floor(idx / n);
+    }
+    return idx * 1200 / S.edo;
+  }
+  function gridLabel(idx) {
+    const n = gridSize(), oct = Math.floor(idx / n), k = mod(idx, n);
+    const base = useMine() ? `Stufe ${k + 1}` : `${k}\\${n}`;
+    return oct ? `${base} ${oct > 0 ? '+' : MINUS}${Math.abs(oct)} Okt.` : base;
+  }
+  function nearestGrid(c) {
+    if (!useMine()) {
+      const st = 1200 / S.edo, k = Math.round(c / st);
+      return { idx: k, dev: c - k * st };
+    }
+    const n = mine.degrees.length, oct = Math.floor(c / 1200);
+    let best = null;
+    for (let i = -1; i <= n; i++) {
+      const idx = oct * n + i, dv = c - gridCents(idx);
+      if (!best || Math.abs(dv) < Math.abs(best.dev)) best = { idx, dev: dv };
+    }
+    return best;
+  }
+  // kleinster Abstand zweier Nachbarn im Raster, für die Skala der Kurve
+  function gridSpacing() {
+    if (!useMine()) return 1200 / S.edo;
+    const cs = mine.degrees.map((d) => d.c);
+    let m = 1200;
+    cs.forEach((c, i) => { m = Math.min(m, (i + 1 < cs.length ? cs[i + 1] : 1200) - c); });
+    return m;
+  }
+  const targetCents = () => gridCents(S.step);
+  const targetFreq = () => rootFreq() * Math.pow(2, targetCents() / 1200);
+  function deviation(f) {
+    let d = 1200 * Math.log2(f / targetFreq());
+    if (S.octFree) d -= 1200 * Math.round(d / 1200);
+    return d;
+  }
+  const noteName = (f) => { const n = note12(f); return `${n.name}${n.octave} ${signed(n.dev)} ¢`; };
+
+  // ---------- Audio ----------
+  let ac = null;       // ein AudioContext für Mikrofon und Wiedergabe
+  let mic = null;      // { stream, src, an, buf, detect, frameDur }
+  let muteUntil = 0;   // während ein Bezugston klingt, wird nicht gemessen
+  let wake = null;
+
+  function audioCtx() {
+    if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+  function showError(msg) { const e = $('mic-error'); e.textContent = msg; e.hidden = !msg; }
+
+  async function startMic() {
+    showError('');
+    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showError('Der Browser gibt das Mikrofon nur frei, wenn die Seite über https, über localhost oder als lokal geöffnete Datei kommt. Auf dem Handy heißt das: die App muss von einer https-Adresse geladen werden.');
+      return false;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      const a = audioCtx();
+      const src = a.createMediaStreamSource(stream);
+      const size = T.bufferSizeFor(a.sampleRate, 60);
+      const an = a.createAnalyser();
+      an.fftSize = size;
+      an.smoothingTimeConstant = 0;
+      src.connect(an);
+      mic = { stream, src, an, buf: new Float32Array(size), detect: T.createDetector(a.sampleRate, { fmin: 60, fmax: 1500 }), frameDur: size / a.sampleRate };
+      $('info-block').textContent = `${size} Samples (${(size / a.sampleRate * 1000).toFixed(1)} ms bei ${a.sampleRate} Hz)`;
+      try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (_) { wake = null; }
+      lastT = 0;
+      requestAnimationFrame(tick);
+      renderMicButton();
+      renderSummary();
+      return true;
+    } catch (e) {
+      if (e && e.name === 'NotAllowedError') showError('Der Zugriff aufs Mikrofon wurde abgelehnt. Erlaube ihn in den Seiteneinstellungen des Browsers und lade die Seite neu.');
+      else if (e && e.name === 'NotFoundError') showError('Es wurde kein Mikrofon gefunden.');
+      else showError('Das Mikrofon ließ sich nicht starten: ' + (e && e.message ? e.message : e));
+      return false;
+    }
+  }
+  function stopMic() {
+    if (rec) stopRec();
+    if (mic) {
+      mic.stream.getTracks().forEach((t) => t.stop());
+      mic.src.disconnect();
+      mic = null;
+    }
+    if (wake) { wake.release().catch(() => {}); wake = null; }
+    renderMicButton();
+    renderSummary();
+    showLive(null);
+    showDev(null);
+    $('lv-level').style.width = '0';
+    $('lv-db').textContent = '';
+  }
+  function renderMicButton() {
+    const b = $('btn-mic');
+    b.textContent = mic ? 'Mikrofon aus' : 'Mikrofon starten';
+    b.classList.toggle('primary', !mic);
+  }
+
+  function tone(f, t, dur) {
+    const a = audioCtx();
+    const o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(), g2 = a.createGain();
+    o.type = 'triangle'; o.frequency.value = f;
+    o2.type = 'sine'; o2.frequency.value = f; g2.gain.value = 0.6;
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(a.destination);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.22, t + 0.03);
+    g.gain.setValueAtTime(0.22, t + dur - 0.15);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    o.start(t); o2.start(t); o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+  function playSeq(freqs, dur, gap = 0.06) {
+    const a = audioCtx();
+    let t = a.currentTime + 0.05;
+    for (const f of freqs) { tone(f, t, dur); t += dur + gap; }
+    muteUntil = Math.max(muteUntil, t + 0.25);
+  }
+
+  // ---------- Messschleife ----------
+  const hist = [];     // { t, f } der letzten Sekunden
+  let lastT = 0;
+  function tick() {
+    if (!mic) return;
+    requestAnimationFrame(tick);
+    const t = ac.currentTime;
+    if (t - lastT < 0.018) return;
+    lastT = t;
+    mic.an.getFloatTimeDomainData(mic.buf);
+    const r = mic.detect(mic.buf, S.gate);
+    const f = t >= muteUntil && r.f && r.conf >= 0.7 ? r.f : null;
+    const fr = { t, f };
+    hist.push(fr);
+    while (hist.length && t - hist[0].t > 10) hist.shift();
+    showLevel(r.db);
+
+    if (rec) {
+      rec.frames.push(fr);
+      if (t - rec.lastSeg > 0.3) { rec.lastSeg = t; analyseRec(); }
+    }
+    // für die Anzeige: Median der letzten 120 ms
+    const vs = [];
+    for (let i = hist.length - 1; i >= 0 && t - hist[i].t <= 0.12; i--) if (hist[i].f) vs.push(hist[i].f);
+    const fs = f ? (vs.length >= 2 ? median(vs) : f) : null;
+    showLive(fs);
+    hitUpdate(t, fs);
+    if (S.tab === 'hit') drawTrace(t);
+    if (S.tab === 'scale' && rec) drawRec(t);
+  }
+
+  function showLevel(db) {
+    const pos = (v) => clamp((v + 90) / 90, 0, 1) * 100;
+    $('lv-level').style.width = (isFinite(db) ? pos(db) : 0) + '%';
+    $('lv-level').style.background = isFinite(db) && db >= S.gate ? C.accent : C['line-2'];
+    $('lv-db').textContent = isFinite(db) ? `${db.toFixed(0)} dBFS` : '';
+    $('lv-gate').style.left = pos(S.gate) + '%';
+  }
+
+  function showLive(f) {
+    $('lv-hz-wrap').classList.toggle('off', !f);
+    if (!f) {
+      $('lv-hz').textContent = '—';
+      ['lv-step', 'lv-ratio', 'lv-12'].forEach((id) => { $(id).textContent = '—'; });
+      return;
+    }
+    $('lv-hz').textContent = f.toFixed(1);
+    const c = 1200 * Math.log2(f / rootFreq());
+    const g = nearestGrid(c);
+    $('lv-step').textContent = `${gridLabel(g.idx)} ${signed(g.dev)} ¢`;
+    const r = nearestRatio(c);
+    $('lv-ratio').textContent = r ? `${r.p}/${r.q} ${signed(r.err)} ¢` : 'kein einfacher Bruch';
+    $('lv-12').textContent = noteName(f);
+  }
+
+  // ---------- Ton treffen ----------
+  const hit = { since: null, vals: [], lastIn: 0, needLeave: false, targetAt: null };
+  const log = [];
+
+  function meterRange() { return Math.max(50, 2 * S.tol); }
+  function showDev(d) {
+    const big = $('dev-big'), needle = $('m-needle');
+    if (d === null) {
+      big.textContent = '—'; big.className = 'dev-big';
+      needle.classList.add('off');
+      return;
+    }
+    const inz = Math.abs(d) <= S.tol;
+    big.textContent = `${signed(d, 0)} ¢`;
+    big.className = 'dev-big ' + (inz ? 'in' : 'out');
+    const R = meterRange();
+    needle.style.left = (50 + clamp(d / R, -1, 1) * 50) + '%';
+    needle.classList.remove('off');
+    needle.classList.toggle('in', inz);
+  }
+  function renderMeter() {
+    const R = meterRange();
+    $('m-zone').style.left = (50 - S.tol / R * 50) + '%';
+    $('m-zone').style.width = (S.tol / R * 100) + '%';
+    $('m-lo').textContent = `${MINUS}${R} ¢`;
+    $('m-hi').textContent = `+${R} ¢`;
+    $('lg-tol').textContent = S.tol;
+  }
+  function setStatus(msg, good) {
+    const el = $('hit-status');
+    el.textContent = msg;
+    el.classList.toggle('good', !!good);
+  }
+
+  function hitUpdate(t, f) {
+    if (!f) {
+      if (hit.since !== null && t - hit.lastIn > 0.15) { hit.since = null; hit.vals = []; }
+      showDev(null);
+      return;
+    }
+    if (hit.targetAt === null) hit.targetAt = t;
+    const d = deviation(f);
+    showDev(d);
+    if (Math.abs(d) <= S.tol) {
+      if (hit.needLeave) return;
+      if (hit.since === null) { hit.since = t; hit.vals = []; }
+      hit.vals.push(d);
+      hit.lastIn = t;
+      const held = t - hit.since;
+      setStatus(`Halten … ${Math.min(held, S.hold).toFixed(1)} von ${S.hold} s`);
+      if (held >= S.hold) registerHit(t);
+    } else {
+      hit.since = null; hit.vals = []; hit.needLeave = false;
+      setStatus(`${d > 0 ? 'Zu hoch' : 'Zu tief'} um ${Math.abs(d).toFixed(0)} ¢`);
+    }
+  }
+  function registerHit(t) {
+    const vals = hit.vals;
+    const mid = median(vals);
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const sd = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / vals.length);
+    log.unshift({ label: gridLabel(S.step), mid, sd, time: hit.targetAt !== null ? t - hit.targetAt : null });
+    if (log.length > 20) log.pop();
+    hit.since = null; hit.vals = []; hit.needLeave = true;
+    setStatus(`Getroffen: Mitte ${signed(mid)} ¢, Streuung ±${sd.toFixed(1)} ¢`, true);
+    renderLog();
+    if (S.random) setTimeout(randomTarget, 700);
+  }
+  function renderLog() {
+    $('hits').innerHTML = log.length
+      ? log.map((h) => `<tr><td>${h.label}</td><td class="${Math.abs(h.mid) <= S.tol / 2 ? 'good-t' : ''}">${signed(h.mid)}</td><td>±${h.sd.toFixed(1)} ¢</td><td>${h.time !== null ? h.time.toFixed(1) + ' s' : '—'}</td></tr>`).join('')
+      : '<tr class="empty"><td colspan="4">Noch keine Treffer. Ziel anhören, dann singen und halten.</td></tr>';
+  }
+
+  function setTarget(idx) {
+    S.step = idx;
+    hit.since = null; hit.vals = []; hit.needLeave = false; hit.targetAt = mic ? ac.currentTime : null;
+    save();
+    renderTarget();
+  }
+  function randomTarget() {
+    const n = gridSize() * S.range;
+    let idx = S.step;
+    if (n > 1) while (idx === S.step) idx = Math.floor(Math.random() * n);
+    setTarget(idx);
+    playSeq([targetFreq()], 1.2);
+  }
+  function renderTarget() {
+    segSet('seg-source', S.source);
+    $('seg-source').querySelector('[data-v="mine"]').disabled = !mine;
+    $('ctl-random').checked = S.random;
+    $('tg-label').textContent = gridLabel(S.step);
+    const f = targetFreq(), c = targetCents();
+    const r = nearestRatio(c);
+    $('tg-info').textContent = `${c.toFixed(1)} ¢ über dem Grundton · ${f.toFixed(2)} Hz · ≈ ${noteName(f)}`
+      + (r ? ` · ≈ ${r.p}/${r.q} ${signed(r.err)} ¢` : '');
+    renderSummary();
+    if (!mic && S.tab === 'hit') drawTrace(0);
+  }
+
+  // Kurve: Abweichung vom Ziel über die letzten 8 s
+  function fitCanvas(cv) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { g, W: cv.clientWidth, H: cv.clientHeight };
+  }
+  function drawTrace(now) {
+    const { g, W, H } = fitCanvas($('trace'));
+    g.clearRect(0, 0, W, H);
+    const span = 8, padR = 74;
+    const R = clamp(Math.max(120, 2.6 * gridSpacing()), 120, 650);
+    const x = (t) => (W - padR) * (1 - (now - t) / span);
+    const y = (d) => H / 2 - d / R * (H / 2 - 12);
+    g.font = '11px ' + css.getPropertyValue('--f-mono');
+    g.textBaseline = 'middle';
+
+    // Bereich ±tol
+    g.fillStyle = 'rgba(60, 193, 131, .14)';
+    g.fillRect(0, y(S.tol), W - padR, y(-S.tol) - y(S.tol));
+    // 12-TET-Lagen
+    const a = 1200 * Math.log2(targetFreq() / 440);
+    g.strokeStyle = C.line; g.lineWidth = 1;
+    for (let j = Math.ceil((a - R) / 100); j <= Math.floor((a + R) / 100); j++) {
+      const d = 100 * j - a;
+      g.beginPath(); g.moveTo(0, y(d)); g.lineTo(W - padR, y(d)); g.stroke();
+    }
+    // Nachbarschritte des Rasters
+    const tc = targetCents(), n = gridSize();
+    for (let k = -3 * n; k <= 3 * n; k++) {
+      const idx = S.step + k;
+      let d = gridCents(idx) - tc;
+      if (S.octFree && k !== 0 && Math.abs(d) > 600) continue;
+      if (Math.abs(d) > R || k === 0) continue;
+      g.strokeStyle = C['line-2']; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(0, y(d)); g.lineTo(W - padR, y(d)); g.stroke();
+      g.fillStyle = C.dim;
+      g.fillText(gridLabel(idx), W - padR + 6, y(d));
+    }
+    // Ziel
+    g.strokeStyle = C.accent; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(0, y(0)); g.lineTo(W - padR, y(0)); g.stroke();
+    g.fillStyle = C['accent-hi'];
+    g.fillText(gridLabel(S.step), W - padR + 6, y(0));
+
+    // Tonhöhe
+    let prev = null;
+    g.lineWidth = 2.5; g.lineCap = 'round';
+    for (const fr of hist) {
+      if (now - fr.t > span) continue;
+      if (!fr.f) { prev = null; continue; }
+      const d = clamp(deviation(fr.f), -R, R);
+      const px = x(fr.t), py = y(d);
+      if (prev && fr.t - prev.t < 0.1) {
+        g.strokeStyle = Math.abs(d) <= S.tol ? C.good : C.text;
+        g.beginPath(); g.moveTo(prev.px, prev.py); g.lineTo(px, py); g.stroke();
+      }
+      prev = { t: fr.t, px, py };
+    }
+    if (prev && now - prev.t < 0.15) {
+      g.fillStyle = C.text;
+      g.beginPath(); g.arc(prev.px, prev.py, 4.5, 0, Math.PI * 2); g.fill();
+    }
+  }
+
+  // ---------- Skala finden ----------
+  let rec = null;      // laufende Aufnahme { t0, frames, lastSeg }
+  let take = null;     // letzte Aufnahme
+  let notes = [];
+  let scaleRes = null;
+
+  function refOpt() {
+    if (S.refMode === 'root') return settingsRoot();
+    return S.refMode;
+  }
+  async function startRec() {
+    if (!mic && !(await startMic())) return;
+    rec = { t0: ac.currentTime, frames: [], lastSeg: 0 };
+    take = rec;
+    notes = []; scaleRes = null;
+    $('btn-rec').textContent = 'Aufnahme beenden';
+    $('btn-rec').className = 'btn rec';
+    $('rec-status').textContent = 'Aufnahme läuft. Einzelne Töne singen, kurz absetzen.';
+    renderNotes(); renderResult();
+  }
+  function stopRec() {
+    if (!rec) return;
+    analyseRec();
+    rec = null;
+    $('btn-rec').textContent = 'Neue Aufnahme';
+    $('btn-rec').className = 'btn primary';
+    $('rec-status').textContent = notes.length
+      ? `${notes.length} Töne erkannt, ${scaleRes ? scaleRes.degrees.length : 0} Stufen.`
+      : 'Kein Ton erkannt. Lauter oder länger singen, oder die Empfindlichkeit erhöhen.';
+    drawRec(take && take.frames.length ? take.frames[take.frames.length - 1].t : 0);
+  }
+  function analyseRec() {
+    if (!take) return;
+    notes = T.segmentNotes(take.frames, { minDur: S.minDur, frameDur: mic ? mic.frameDur : 0.043 });
+    scaleRes = notes.length ? T.deriveScale(notes, { ref: refOpt(), tol: S.merge }) : null;
+    renderNotes();
+    renderResult();
+  }
+
+  function renderNotes() {
+    $('notes-body').innerHTML = notes.length
+      ? notes.map((n, i) => `<tr><td>${i + 1}</td><td>${n.f.toFixed(2)}</td><td>${noteName(n.f)}</td><td>${n.dur.toFixed(2)} s</td><td>±${n.spread.toFixed(1)} ¢</td>`
+        + `<td>${n.vib ? `${n.vib.rate.toFixed(1)} Hz, ±${n.vib.depth.toFixed(0)} ¢` : '<span class="sub">—</span>'}</td></tr>`).join('')
+      : '<tr class="empty"><td colspan="6">Noch keine Töne.</td></tr>';
+  }
+
+  function drawRec(now) {
+    const { g, W, H } = fitCanvas($('rec-canvas'));
+    g.clearRect(0, 0, W, H);
+    if (!take || !take.frames.length) {
+      g.fillStyle = C.dim; g.font = '13px ' + css.getPropertyValue('--f-ui');
+      g.fillText('Hier erscheint die Tonhöhe der Aufnahme.', 14, H / 2);
+      return;
+    }
+    const t0 = take.t0, t1 = Math.max(t0 + 10, now);
+    const cs = take.frames.filter((f) => f.f).map((f) => 1200 * Math.log2(f.f / 440));
+    let lo = cs.length ? Math.min(...cs) : -500, hi = cs.length ? Math.max(...cs) : 0;
+    if (hi - lo < 700) { const m = (hi + lo) / 2; lo = m - 350; hi = m + 350; }
+    lo -= 60; hi += 60;
+    const padL = 44;
+    const x = (t) => padL + (W - padL - 8) * (t - t0) / (t1 - t0);
+    const y = (c) => H - 10 - (H - 20) * (c - lo) / (hi - lo);
+    g.font = '10.5px ' + css.getPropertyValue('--f-mono');
+    g.textBaseline = 'middle';
+    // 12-TET-Lagen mit Namen, wenn Platz ist
+    const every = Math.max(1, Math.ceil(14 / ((H - 20) / ((hi - lo) / 100))));
+    for (let j = Math.ceil(lo / 100); j <= Math.floor(hi / 100); j++) {
+      const yy = y(100 * j);
+      g.strokeStyle = C.line; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(padL, yy); g.lineTo(W - 8, yy); g.stroke();
+      if (mod(j, every) === 0) { const n = note12(440 * Math.pow(2, j / 12)); g.fillStyle = C.dim; g.fillText(`${n.name}${n.octave}`, 4, yy); }
+    }
+    // erkannte Töne
+    notes.forEach((n, i) => {
+      g.fillStyle = 'rgba(75, 141, 248, .28)';
+      g.fillRect(x(n.t0), y(n.c) - 5, Math.max(2, x(n.t1) - x(n.t0)), 10);
+      g.fillStyle = C['accent-hi'];
+      g.fillText(String(i + 1), x(n.t0), y(n.c) - 13);
+    });
+    // Rohspur
+    g.fillStyle = C.text;
+    for (const fr of take.frames) {
+      if (!fr.f) continue;
+      g.fillRect(x(fr.t) - 1, y(1200 * Math.log2(fr.f / 440)) - 1, 2, 2);
+    }
+  }
+
+  function renderResult() {
+    const box = $('result');
+    box.hidden = !scaleRes;
+    if (!scaleRes) return;
+    const sc = scaleRes;
+    const refTxt = S.refMode === 'root' ? 'Grundton aus den Einstellungen' : S.refMode === 'lowest' ? 'tiefster Ton' : 'erster Ton';
+    $('res-info').textContent = `${sc.degrees.length} Stufen · Bezug ${sc.fref.toFixed(2)} Hz ≈ ${noteName(sc.fref)} (${refTxt}${sc.refSung ? '' : ', nicht gesungen'})`;
+    $('deg-body').innerHTML = sc.degrees.map((dg, i) => {
+      const r = nearestRatio(dg.c);
+      return `<tr class="${i === 0 ? 'root' : ''}"><td><span class="badge">${i + 1}</span></td><td>${dg.c.toFixed(1)}</td><td>${sc.steps[i - 1] !== undefined ? sc.steps[i - 1].toFixed(1) : '<span class="sub">—</span>'}</td>`
+        + `<td>${dg.count}×</td><td>${dg.count > 1 ? '±' + dg.spread.toFixed(1) + ' ¢' : '<span class="sub">—</span>'}</td>`
+        + `<td>${r ? `${r.p}/${r.q} <span class="sub">${signed(r.err)}</span>` : '<span class="sub">—</span>'}</td><td>${noteName(dg.f)}</td><td>${dg.f.toFixed(2)}</td></tr>`;
+    }).join('') + `<tr><td><span class="badge">1</span></td><td>1200.0</td><td>${sc.steps[sc.steps.length - 1].toFixed(1)}</td><td colspan="5" style="text-align:left"><span class="sub">Oktave</span></td></tr>`;
+    renderRing(sc);
+    renderEdo(sc);
+    $('scl-preview').textContent = T.toScl(sc, { name: fileBase(), kind: 'scl' });
+  }
+
+  const JI_MARKS = [[9, 8], [7, 6], [6, 5], [5, 4], [4, 3], [11, 8], [3, 2], [8, 5], [5, 3], [7, 4], [15, 8]];
+  function renderRing(sc) {
+    const Rr = 104, Cc = 160, f2 = (v) => v.toFixed(2);
+    const P = (frac, r) => { const a = frac * 2 * Math.PI - Math.PI / 2; return [Cc + r * Math.cos(a), Cc + r * Math.sin(a)]; };
+    let h = `<circle class="r-ring" cx="${Cc}" cy="${Cc}" r="${Rr}"/>`;
+    for (let j = 0; j < 12; j++) {
+      const [x1, y1] = P(j / 12, Rr + 10), [x2, y2] = P(j / 12, Rr + 17);
+      h += `<line class="r-tick" x1="${f2(x1)}" y1="${f2(y1)}" x2="${f2(x2)}" y2="${f2(y2)}"/>`;
+    }
+    for (const [p, q] of JI_MARKS) {
+      const fr = Math.log2(p / q);
+      const [x, y] = P(fr, Rr - 18), [lx, ly] = P(fr, Rr - 31), d = 4.5;
+      h += `<polygon class="r-ji" points="${f2(x)},${f2(y - d)} ${f2(x + d)},${f2(y)} ${f2(x)},${f2(y + d)} ${f2(x - d)},${f2(y)}"/>`;
+      h += `<text class="r-ji-t" x="${f2(lx)}" y="${f2(ly)}">${p}/${q}</text>`;
+    }
+    if (sc.degrees.length > 2) h += `<polygon class="r-poly" points="${sc.degrees.map((dg) => P(dg.c / 1200, Rr).map(f2).join(',')).join(' ')}"/>`;
+    sc.degrees.forEach((dg, i) => {
+      const [x, y] = P(dg.c / 1200, Rr);
+      h += `<g class="r-dot${i === 0 ? ' root' : ''}"><circle cx="${f2(x)}" cy="${f2(y)}" r="11"/><text x="${f2(x)}" y="${f2(y)}">${i + 1}</text><title>Stufe ${i + 1}: ${dg.c.toFixed(1)} ¢</title></g>`;
+    });
+    h += `<text class="r-c1" x="${Cc}" y="${Cc - 2}">${sc.degrees.length} Stufen</text>`;
+    h += `<text class="r-c2" x="${Cc}" y="${Cc + 18}">Bezug ${sc.fref.toFixed(1)} Hz</text>`;
+    $('ring').innerHTML = h;
+  }
+
+  function renderEdo(sc) {
+    const cs = sc.degrees.map((dg) => dg.c);
+    const fits = T.fitEdo(cs, { min: 5, max: 72 });
+    const parts = [5, 10, 20].map((tol) => {
+      const b = T.smallestEdo(fits, tol);
+      return b ? `±${tol} ¢: ${b.N}-EDO (größter Fehler ${b.maxErr.toFixed(1)} ¢)` : `±${tol} ¢: kein Raster bis 72`;
+    });
+    $('edo-text').textContent = `Kleinstes Raster, das alle Stufen trifft · ${parts.join(' · ')}`;
+
+    const svg = $('edo-chart');
+    const W = Math.max(280, svg.clientWidth || 600), H = 170, padL = 34, padB = 22, top = 8;
+    const cap = 60;
+    const bw = (W - padL - 6) / fits.length;
+    const y = (v) => top + (H - padB - top) * (1 - Math.min(v, cap) / cap);
+    let h = '';
+    for (const v of [10, 20, 40, 60]) {
+      h += `<line class="e-axis" x1="${padL}" x2="${W - 4}" y1="${y(v)}" y2="${y(v)}" stroke-opacity="${v === 10 ? 0 : .5}"/>`;
+      h += `<text class="e-t" x="${padL - 6}" y="${y(v) + 3.5}" text-anchor="end">${v}</text>`;
+    }
+    h += `<line class="e-ref" x1="${padL}" x2="${W - 4}" y1="${y(10)}" y2="${y(10)}"/>`;
+    fits.forEach((ft, i) => {
+      const x = padL + i * bw + 1;
+      const cls = ft.distinct && ft.maxErr <= 10 ? 'ok' : ft.distinct && ft.maxErr <= 20 ? 'mid' : '';
+      const hh = Math.max(1, H - padB - y(ft.maxErr));
+      h += `<rect class="e-bar ${cls}" x="${x.toFixed(1)}" y="${(H - padB - hh).toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${hh.toFixed(1)}" rx="1"><title>${ft.N}-EDO: größter Fehler ${ft.maxErr.toFixed(1)} ¢${ft.distinct ? '' : ', zwei Stufen auf einem Schritt'}</title></rect>`;
+      if ([5, 12, 16, 19, 22, 24, 31, 41, 53, 72].includes(ft.N)) h += `<text class="e-t" x="${(x + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${ft.N}</text>`;
+    });
+    h += `<line class="e-axis" x1="${padL}" x2="${W - 4}" y1="${H - padB}" y2="${H - padB}"/>`;
+    h += `<text class="e-t" x="${padL - 6}" y="${top + 4}" text-anchor="end">¢</text>`;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = h;
+  }
+
+  function fileBase() {
+    const d = new Date();
+    const p = (v) => String(v).padStart(2, '0');
+    return `gesungen-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${scaleRes ? scaleRes.degrees.length : 0}stufen`;
+  }
+  function download(name, text) {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  // ---------- Kopfzeile, Reiter, Steuerung ----------
+  function renderSummary() {
+    const sys = useMine() ? `Meine Skala, ${mine.degrees.length} Stufen` : `${S.edo}-EDO`;
+    $('summary').textContent = `${sys} · Grundton ${rootFreq().toFixed(2)} Hz ≈ ${noteName(rootFreq())} · Mikrofon ${mic ? 'an' : 'aus'}`;
+  }
+  function segSet(id, v) {
+    $(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === String(v))));
+  }
+  function showTab(t) {
+    S.tab = t; save();
+    ['hit', 'scale', 'set'].forEach((k) => {
+      $('tab-' + k).setAttribute('aria-selected', String(k === t));
+      $('pane-' + k).hidden = k !== t;
+    });
+    if (t === 'scale') { drawRec(take && take.frames.length ? take.frames[take.frames.length - 1].t : 0); if (scaleRes) renderEdo(scaleRes); }
+    if (t === 'hit' && !mic) drawTrace(0);
+  }
+
+  function initSettings() {
+    const edoNames = { 12: 'Standard', 16: 'Mavila', 19: '', 22: 'Shrutis', 24: 'Vierteltöne', 31: 'Huygens', 41: '', 53: 'Mercator', 72: 'Zwölfteltöne' };
+    $('ctl-edo').innerHTML = Array.from({ length: 68 }, (_, i) => i + 5)
+      .map((n) => `<option value="${n}">${n}${edoNames[n] ? ' · ' + edoNames[n] : ''} (${(1200 / n).toFixed(1)} ¢)</option>`).join('');
+    $('ctl-root').innerHTML = NAMES.map((nm, i) => `<option value="${i}">${nm}</option>`).join('');
+    $('ctl-oct').innerHTML = [1, 2, 3, 4, 5].map((o) => `<option value="${o}">${o}</option>`).join('');
+  }
+  function renderSettings() {
+    $('ctl-edo').value = String(S.edo);
+    $('ctl-root').value = String(S.root);
+    $('ctl-oct').value = String(S.rootOct);
+    const f = settingsRoot();
+    $('root-info').textContent = `Grundton ${NAMES[S.root]}${S.rootOct} = ${f.toFixed(2)} Hz · ein Rasterschritt = ${(1200 / S.edo).toFixed(2)} ¢`
+      + (useMine() ? ' · Zum Üben ist gerade „Meine Skala“ gewählt, sie bringt ihren eigenen Bezugston mit.' : '');
+    segSet('seg-tol', S.tol); segSet('seg-hold', S.hold); segSet('seg-range', S.range);
+    segSet('seg-ref', S.refMode); segSet('seg-merge', S.merge); segSet('seg-mindur', S.minDur);
+    $('ctl-octfree').checked = S.octFree;
+    $('ctl-gate').value = String(S.gate);
+    $('gate-out').textContent = `${S.gate} dBFS`;
+    renderMeter();
+  }
+  function renderAll() {
+    renderSettings();
+    renderTarget();
+    renderLog();
+    renderNotes();
+    renderResult();
+  }
+
+  $('btn-mic').addEventListener('click', () => { if (mic) stopMic(); else startMic(); });
+  ['hit', 'scale', 'set'].forEach((k) => $('tab-' + k).addEventListener('click', () => showTab(k)));
+
+  $('seg-source').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b || b.disabled) return;
+    S.source = b.dataset.v; S.step = 0; setTarget(0); renderSettings();
+  });
+  $('tg-down').addEventListener('click', () => setTarget(S.step - 1));
+  $('tg-up').addEventListener('click', () => setTarget(S.step + 1));
+  $('ctl-random').addEventListener('change', (e) => { S.random = e.target.checked; save(); if (S.random) randomTarget(); });
+  $('btn-play').addEventListener('click', () => playSeq([targetFreq()], 1.4));
+
+  $('btn-rec').addEventListener('click', () => { if (rec) stopRec(); else startRec(); });
+  $('btn-clear').addEventListener('click', () => {
+    if (rec) stopRec();
+    take = null; notes = []; scaleRes = null;
+    $('rec-status').textContent = '';
+    $('btn-rec').textContent = 'Aufnahme starten';
+    renderNotes(); renderResult(); drawRec(0);
+  });
+  $('btn-listen').addEventListener('click', () => {
+    if (!scaleRes) return;
+    playSeq(scaleRes.degrees.map((dg) => dg.f).concat([scaleRes.fref * 2]), 0.55);
+  });
+  $('btn-use').addEventListener('click', () => {
+    if (!scaleRes) return;
+    mine = { fref: scaleRes.fref, degrees: scaleRes.degrees.map((dg) => ({ c: dg.c, count: dg.count, spread: dg.spread })) };
+    S.source = 'mine';
+    setTarget(0);
+    renderSettings();
+    showTab('hit');
+  });
+  $('btn-scl').addEventListener('click', () => { if (scaleRes) download(fileBase() + '.scl', T.toScl(scaleRes, { name: fileBase(), kind: 'scl' })); });
+  $('btn-ascl').addEventListener('click', () => { if (scaleRes) download(fileBase() + '.ascl', T.toScl(scaleRes, { name: fileBase(), kind: 'ascl' })); });
+
+  const segNum = (id, key, after) => $(id).addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    S[key] = Number(b.dataset.v); save(); renderSettings(); if (after) after();
+  });
+  segNum('seg-tol', 'tol', renderTarget);
+  segNum('seg-hold', 'hold');
+  segNum('seg-range', 'range');
+  segNum('seg-merge', 'merge', analyseRec);
+  segNum('seg-mindur', 'minDur', analyseRec);
+  $('seg-ref').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.refMode = b.dataset.v; save(); renderSettings(); analyseRec();
+  });
+  $('ctl-edo').addEventListener('change', (e) => { S.edo = Number(e.target.value); if (!useMine()) S.step = 0; save(); renderSettings(); setTarget(S.step); });
+  $('ctl-root').addEventListener('change', (e) => { S.root = Number(e.target.value); save(); renderSettings(); renderTarget(); analyseRec(); });
+  $('ctl-oct').addEventListener('change', (e) => { S.rootOct = Number(e.target.value); save(); renderSettings(); renderTarget(); analyseRec(); });
+  $('ctl-octfree').addEventListener('change', (e) => { S.octFree = e.target.checked; save(); });
+  $('ctl-gate').addEventListener('input', (e) => { S.gate = Number(e.target.value); $('gate-out').textContent = `${S.gate} dBFS`; save(); });
+
+  window.addEventListener('resize', () => { if (scaleRes && S.tab === 'scale') renderEdo(scaleRes); });
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && mic && navigator.wakeLock && (!wake || wake.released)) {
+      try { wake = await navigator.wakeLock.request('screen'); } catch (_) { wake = null; }
+    }
+  });
+
+  initSettings();
+  renderAll();
+  renderMicButton();
+  showTab(S.tab);
+  if (!window.isSecureContext) showError('Diese Seite ist nicht sicher geladen (kein https, kein localhost). Der Browser wird das Mikrofon verweigern.');
+})();
+</script>
+</body>
+</html>
