@@ -111,7 +111,7 @@
   .hz-big.off { color: var(--dim); }
   .level { display: flex; flex-direction: column; gap: 6px; width: min(240px, 100%); }
   .lvl-track { position: relative; height: 8px; border-radius: 4px; background: var(--inset); border: 1px solid var(--line-2); overflow: hidden; }
-  #lv-level { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); }
+  #lv-level { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); transition: width .2s linear; }
   #lv-gate { position: absolute; top: -1px; bottom: -1px; width: 2px; background: var(--muted); }
   .lv-grid { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 16px; }
   .lv-grid dt { font: 600 12px/1.2 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
@@ -139,6 +139,8 @@
   .m-needle { position: absolute; top: 4px; width: 4px; height: 34px; margin-left: -2px; border-radius: 2px; background: var(--text); box-shadow: 0 0 0 2px var(--panel); transition: left .06s linear; }
   .m-needle.in { background: var(--good); }
   .m-needle.off { opacity: 0; }
+  .holdbar { height: 6px; border-radius: 3px; background: var(--inset); border: 1px solid var(--line); overflow: hidden; }
+  #hold-fill { height: 100%; width: 0; background: var(--good); }
   .m-scale { position: absolute; left: 0; right: 0; top: 36px; display: flex; justify-content: space-between; font: 500 11px var(--f-mono); color: var(--dim); }
   .status { margin: 0; min-height: 1.6em; font: 600 15px/1.4 var(--f-ui); color: var(--muted); }
   .status.good { color: var(--good); }
@@ -250,6 +252,23 @@
       <label class="toggle"><input type="checkbox" id="ctl-random"><span class="sw" aria-hidden="true"></span><span>Zufall<small>nach jedem Treffer ein neues Ziel</small></span></label>
       <button class="btn" type="button" id="btn-play">Ziel anhören</button>
     </div>
+    <div class="row">
+      <div class="field">
+        <span class="lbl" id="l-view">Anzeige</span>
+        <div class="seg" role="group" aria-labelledby="l-view" id="seg-view">
+          <button type="button" data-v="ruhig">Ruhig</button>
+          <button type="button" data-v="direkt">Direkt</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl" id="l-fb">Rückmeldung</span>
+        <div class="seg" role="group" aria-labelledby="l-fb" id="seg-fb">
+          <button type="button" data-v="live">Beim Singen</button>
+          <button type="button" data-v="danach">Erst danach</button>
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="fb-hint"></p>
     <p class="readout" id="tg-info"></p>
 
     <div class="dev-row">
@@ -262,6 +281,7 @@
         <div class="m-scale"><span id="m-lo"></span><span>0 ¢</span><span id="m-hi"></span></div>
       </div>
     </div>
+    <div class="holdbar" aria-hidden="true"><div id="hold-fill"></div></div>
     <p class="status" id="hit-status" aria-live="polite"></p>
 
     <canvas class="plot" id="trace" aria-label="Tonhöhe der letzten acht Sekunden relativ zum Ziel"></canvas>
@@ -274,7 +294,7 @@
 
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Ziel</th><th>Mitte<span class="sub"> ¢</span></th><th>Streuung</th><th>Zeit bis Treffer</th></tr></thead>
+        <thead><tr><th>Ziel</th><th>Mitte<span class="sub"> ¢</span></th><th>Streuung</th><th>Zeit</th></tr></thead>
         <tbody id="hits"></tbody>
       </table>
     </div>
@@ -418,6 +438,7 @@
       <p>Das Mikrofonsignal wird etwa 50-mal pro Sekunde in Blöcken von <span id="info-block">2048 Samples</span> ausgewertet. Für jede Verschiebung τ misst die App, wie sehr sich das Signal von sich selbst unterscheidet: <code>d(τ) = Σ (x_j − x_{j+τ})²</code>. Bei der Periode T des Tons ist d fast null, die Frequenz ist <code>f = Abtastrate / T</code>. Bruchteile eines Samples kommen aus einer Parabel durch die drei Werte um das Minimum (YIN-Verfahren, de Cheveigné &amp; Kawahara 2002). Bei einem sauberen Ton ist das auf weniger als 1 ¢ genau.</p>
       <p>Abweichungen stehen in Cent: <code>1200 · log₂(f / f_Ziel)</code>. 100 ¢ sind ein 12-TET-Halbton, 1200 ¢ eine Oktave.</p>
       <p>Echo-Unterdrückung, Rauschfilter und automatische Pegelanpassung des Browsers sind ausgeschaltet, weil sie das Signal verändern.</p>
+      <p>Die ruhige Anzeige dämpft die Tonhöhe mit einer Zeitkonstante von 0.3 s. Das ist ein gleitender Mittelwert in Cent, der Vibrato und Messrauschen glättet. Ein Sprung über 150 ¢ gilt als neuer Ton und wird sofort übernommen. Zahlen ändern sich höchstens viermal pro Sekunde und erst ab 2 ¢ Unterschied. Der Zielbereich hat eine Hysterese: hinein bei ±Bereich, hinaus erst 30 % weiter draußen. Grund: Wer auf jeden einzelnen Messwert reagiert, regelt mit seiner Reaktionszeit von etwa 0.2 s gegen Rauschen an und pendelt um das Ziel.</p>
       <p>Ein gesungener Ton wird als Ton gezählt, wenn seine Tonhöhe weniger als 45 ¢ um ihre laufende Mitte schwankt. Vibrato-Ausschläge, die zurückkommen, gehören dazu. Einschwingen und Ausklang (je 15 %) zählen nicht zur Tonhöhe. Mit Vibrato ist die Mitte der Mittelwert, ohne Vibrato der Median.</p>
     </div>
   </section>
@@ -448,6 +469,7 @@
     edo: 12, root: 9, rootOct: 3, tol: 10, hold: 0.6, octFree: true, gate: -55,
     source: 'edo', step: 0, random: false, range: 1,
     refMode: 'first', merge: 35, minDur: 0.3, tab: 'hit',
+    view: 'ruhig', feedback: 'live',
   };
   function load() {
     const s = { ...DEFAULTS };
@@ -469,6 +491,8 @@
     if (![0.2, 0.3, 0.5].includes(s.minDur)) s.minDur = 0.3;
     if (!['first', 'lowest', 'root'].includes(s.refMode)) s.refMode = 'first';
     if (!['hit', 'scale', 'set'].includes(s.tab)) s.tab = 'hit';
+    if (!['ruhig', 'direkt'].includes(s.view)) s.view = 'ruhig';
+    if (!['live', 'danach'].includes(s.feedback)) s.feedback = 'live';
     s.gate = clamp(Math.round(s.gate), -80, -25);
     s.step = Math.round(s.step) || 0;
     if (s.source === 'mine' && !mine) s.source = 'edo';
@@ -583,7 +607,8 @@
     renderMicButton();
     renderSummary();
     showLive(null);
-    showDev(null);
+    resetFeedback();
+    sm.c = null;
     $('lv-level').style.width = '0';
     $('lv-db').textContent = '';
   }
@@ -613,33 +638,63 @@
   }
 
   // ---------- Messschleife ----------
-  const hist = [];     // { t, f } der letzten Sekunden
-  let lastT = 0;
+  // Ruhige Anzeige: Die Tonhöhe wird gedämpft (Zeitkonstante TAU), Zahlen
+  // ändern sich höchstens alle UI_DT Sekunden, kurze Aussetzer bis HOLD_GAP
+  // werden überbrückt. Sonst regelt man gegen Rauschen und Vibrato an und
+  // pendelt um das Ziel. Direkte Anzeige: jeder Messwert sofort.
+  const TAU = 0.3, UI_DT = 0.25, HOLD_GAP = 0.35, JUMP = 150;
+  const hist = [];     // { t, f, fs } der letzten Sekunden; fs gedämpft
+  const sm = { c: null, lastVoice: -Infinity, db: -90 };
+  let lastT = 0, uiAt = 0;
+  const calm = () => S.view === 'ruhig';
+  const ema = (prev, x, dt, tau) => (prev === null ? x : prev + (x - prev) * (1 - Math.exp(-dt / tau)));
+
   function tick() {
     if (!mic) return;
     requestAnimationFrame(tick);
     const t = ac.currentTime;
     if (t - lastT < 0.018) return;
+    const dt = Math.min(0.2, t - lastT);
     lastT = t;
     mic.an.getFloatTimeDomainData(mic.buf);
     const r = mic.detect(mic.buf, S.gate);
     const f = t >= muteUntil && r.f && r.conf >= 0.7 ? r.f : null;
-    const fr = { t, f };
+
+    // Dämpfung in Cent; ein Sprung über JUMP ¢ ist ein neuer Ton und wird sofort übernommen
+    if (f) {
+      const c = 1200 * Math.log2(f / 440);
+      if (sm.c === null || t - sm.lastVoice > HOLD_GAP || Math.abs(c - sm.c) > JUMP) sm.c = c;
+      else sm.c = ema(sm.c, c, dt, TAU);
+      sm.lastVoice = t;
+    } else if (t - sm.lastVoice > HOLD_GAP) sm.c = null;
+    const fSm = sm.c === null ? null : 440 * Math.pow(2, sm.c / 1200);
+
+    const fr = { t, f, fs: f ? fSm : null };
     hist.push(fr);
     while (hist.length && t - hist[0].t > 10) hist.shift();
-    showLevel(r.db);
 
     if (rec) {
       rec.frames.push(fr);
       if (t - rec.lastSeg > 0.3) { rec.lastSeg = t; analyseRec(); }
     }
-    // für die Anzeige: Median der letzten 120 ms
-    const vs = [];
-    for (let i = hist.length - 1; i >= 0 && t - hist[i].t <= 0.12; i--) if (hist[i].f) vs.push(hist[i].f);
-    const fs = f ? (vs.length >= 2 ? median(vs) : f) : null;
-    showLive(fs);
-    hitUpdate(t, fs);
-    if (S.tab === 'hit') drawTrace(t);
+
+    let fShow;
+    if (calm()) fShow = fSm;
+    else {
+      const vs = [];   // Median der letzten 120 ms
+      for (let i = hist.length - 1; i >= 0 && t - hist[i].t <= 0.12; i--) if (hist[i].f) vs.push(hist[i].f);
+      fShow = f ? (vs.length >= 2 ? median(vs) : f) : null;
+    }
+    sm.db = calm() ? ema(sm.db, isFinite(r.db) ? r.db : -90, dt, 0.2) : r.db;
+    const uiNow = !calm() || t >= uiAt;
+    if (uiNow) {
+      uiAt = t + UI_DT;
+      showLevel(sm.db);
+      showLive(fShow);
+    }
+    if (S.feedback === 'danach') afterUpdate(t, f);
+    else hitUpdate(t, fShow, f, uiNow);
+    if (S.tab === 'hit' && S.feedback !== 'danach') drawTrace(t);
     if (S.tab === 'scale' && rec) drawRec(t);
   }
 
@@ -651,13 +706,19 @@
     $('lv-gate').style.left = pos(S.gate) + '%';
   }
 
+  let shownLive = null;   // zuletzt angezeigte Tonhöhe in Cent über A4
   function showLive(f) {
     $('lv-hz-wrap').classList.toggle('off', !f);
     if (!f) {
+      shownLive = null;
       $('lv-hz').textContent = '—';
       ['lv-step', 'lv-ratio', 'lv-12'].forEach((id) => { $(id).textContent = '—'; });
       return;
     }
+    // ruhig: erst neu schreiben, wenn sich die Tonhöhe um mindestens 2 ¢ bewegt hat
+    const cA = 1200 * Math.log2(f / 440);
+    if (calm() && shownLive !== null && Math.abs(cA - shownLive) < 2) return;
+    shownLive = cA;
     $('lv-hz').textContent = f.toFixed(1);
     const c = 1200 * Math.log2(f / rootFreq());
     const g = nearestGrid(c);
@@ -672,21 +733,36 @@
   const log = [];
 
   function meterRange() { return Math.max(50, 2 * S.tol); }
-  function showDev(d) {
+  // Zielbereich mit Hysterese: hinein bei ±tol, hinaus erst bei ±(tol + h).
+  // Sonst flackert die Farbe genau an der Grenze.
+  let inZone = false;
+  function zoneOf(d) {
+    if (!calm()) return Math.abs(d) <= S.tol;
+    const h = Math.max(2, 0.3 * S.tol);
+    inZone = inZone ? Math.abs(d) <= S.tol + h : Math.abs(d) <= S.tol;
+    return inZone;
+  }
+  let shownDev = null;
+  function showDev(d, inz, uiNow) {
     const big = $('dev-big'), needle = $('m-needle');
     if (d === null) {
-      big.textContent = '—'; big.className = 'dev-big';
+      if (uiNow) { big.textContent = '—'; big.className = 'dev-big'; shownDev = null; }
       needle.classList.add('off');
       return;
     }
-    const inz = Math.abs(d) <= S.tol;
-    big.textContent = `${signed(d, 0)} ¢`;
-    big.className = 'dev-big ' + (inz ? 'in' : 'out');
     const R = meterRange();
     needle.style.left = (50 + clamp(d / R, -1, 1) * 50) + '%';
     needle.classList.remove('off');
     needle.classList.toggle('in', inz);
+    if (!uiNow) return;
+    const cls = 'dev-big ' + (inz ? 'in' : 'out');
+    if (big.className !== cls) big.className = cls;
+    // ruhig: die Zahl springt erst, wenn sich der Wert um mindestens 2 ¢ bewegt hat
+    if (calm() && shownDev !== null && Math.abs(d - shownDev) < 2) return;
+    shownDev = d;
+    big.textContent = `${signed(d, 0)} ¢`;
   }
+  function holdBar(p) { $('hold-fill').style.width = (p * 100).toFixed(1) + '%'; }
   function renderMeter() {
     const R = meterRange();
     $('m-zone').style.left = (50 - S.tol / R * 50) + '%';
@@ -697,53 +773,125 @@
   }
   function setStatus(msg, good) {
     const el = $('hit-status');
-    el.textContent = msg;
+    if (el.textContent !== msg) el.textContent = msg;
     el.classList.toggle('good', !!good);
   }
+  const statsOf = (vals) => {
+    const mid = median(vals);
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const sd = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / vals.length);
+    return { mid, sd };
+  };
 
-  function hitUpdate(t, f) {
+  // Rückmeldung beim Singen. f: angezeigte (ruhig: gedämpfte) Tonhöhe, fRaw: Messwert
+  function hitUpdate(t, f, fRaw, uiNow) {
     if (!f) {
       if (hit.since !== null && t - hit.lastIn > 0.15) { hit.since = null; hit.vals = []; }
-      showDev(null);
+      inZone = false;
+      showDev(null, false, uiNow);
+      holdBar(0);
       return;
     }
     if (hit.targetAt === null) hit.targetAt = t;
     const d = deviation(f);
-    showDev(d);
-    if (Math.abs(d) <= S.tol) {
-      if (hit.needLeave) return;
+    const inz = zoneOf(d);
+    showDev(d, inz, uiNow);
+    if (inz) {
+      if (hit.needLeave) { holdBar(0); return; }
       if (hit.since === null) { hit.since = t; hit.vals = []; }
-      hit.vals.push(d);
+      hit.vals.push(deviation(fRaw || f));   // Statistik aus den Messwerten, nicht aus der Dämpfung
       hit.lastIn = t;
       const held = t - hit.since;
-      setStatus(`Halten … ${Math.min(held, S.hold).toFixed(1)} von ${S.hold} s`);
+      holdBar(Math.min(1, held / S.hold));
+      setStatus(calm() ? 'Halten' : `Halten … ${Math.min(held, S.hold).toFixed(1)} von ${S.hold} s`);
       if (held >= S.hold) registerHit(t);
     } else {
       hit.since = null; hit.vals = []; hit.needLeave = false;
-      setStatus(`${d > 0 ? 'Zu hoch' : 'Zu tief'} um ${Math.abs(d).toFixed(0)} ¢`);
+      holdBar(0);
+      setStatus(calm() ? (d > 0 ? 'Zu hoch' : 'Zu tief') : `${d > 0 ? 'Zu hoch' : 'Zu tief'} um ${Math.abs(d).toFixed(0)} ¢`);
     }
   }
   function registerHit(t) {
-    const vals = hit.vals;
-    const mid = median(vals);
-    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-    const sd = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / vals.length);
-    log.unshift({ label: gridLabel(S.step), mid, sd, time: hit.targetAt !== null ? t - hit.targetAt : null });
+    const { mid, sd } = statsOf(hit.vals);
+    log.unshift({ label: gridLabel(S.step), mid, sd, ok: true, time: hit.targetAt !== null ? `nach ${(t - hit.targetAt).toFixed(1)} s` : '—' });
     if (log.length > 20) log.pop();
     hit.since = null; hit.vals = []; hit.needLeave = true;
+    holdBar(0);
     setStatus(`Getroffen: Mitte ${signed(mid)} ¢, Streuung ±${sd.toFixed(1)} ¢`, true);
     renderLog();
     if (S.random) setTimeout(randomTarget, 700);
   }
+
+  // Rückmeldung erst danach: beim Singen keine Anzeige; wenn der Ton endet,
+  // die Mitte des gehaltenen Teils (ohne je 15 % Anfang und Ende)
+  const aft = { pts: [], start: null, last: -Infinity };
+  function afterUpdate(t, fRaw) {
+    if (fRaw) {
+      if (aft.start === null || t - aft.last > 0.3) {
+        aft.pts = []; aft.start = t;
+        setStatus('Singen … das Ergebnis kommt, wenn du absetzt');
+        const big = $('dev-big'); big.textContent = '…'; big.className = 'dev-big';
+        $('m-needle').classList.add('off');
+        holdBar(0);
+      }
+      aft.pts.push({ t, d: deviation(fRaw) });
+      aft.last = t;
+      return;
+    }
+    if (aft.start !== null && t - aft.last > 0.3) finishAfter();
+  }
+  function finishAfter() {
+    const pts = aft.pts, start = aft.start, last = aft.last, dur = last - start;
+    aft.start = null; aft.pts = [];
+    if (dur < 0.5 || pts.length < 8) {
+      if (dur >= 0.2) setStatus('Zu kurz. Den Ton mindestens eine halbe Sekunde halten.');
+      return;
+    }
+    const core = pts.filter((p) => p.t >= start + 0.15 * dur && p.t <= last - 0.15 * dur).map((p) => p.d);
+    const { mid, sd } = statsOf(core.length ? core : pts.map((p) => p.d));
+    const ok = Math.abs(mid) <= S.tol;
+    const big = $('dev-big');
+    big.textContent = `${signed(mid, 0)} ¢`;
+    big.className = 'dev-big ' + (ok ? 'in' : 'out');
+    const needle = $('m-needle');
+    needle.style.left = (50 + clamp(mid / meterRange(), -1, 1) * 50) + '%';
+    needle.classList.remove('off');
+    needle.classList.toggle('in', ok);
+    setStatus(`${ok ? 'Getroffen' : (mid > 0 ? 'Zu hoch' : 'Zu tief')}: Mitte ${signed(mid)} ¢, Streuung ±${sd.toFixed(1)} ¢`, ok);
+    log.unshift({ label: gridLabel(S.step), mid, sd, ok, time: `${dur.toFixed(1)} s gesungen` });
+    if (log.length > 20) log.pop();
+    renderLog();
+    if (S.tab === 'hit') drawTrace(last + 0.3);   // Momentaufnahme des Tons
+    if (ok && S.random) setTimeout(randomTarget, 900);
+  }
+
   function renderLog() {
     $('hits').innerHTML = log.length
-      ? log.map((h) => `<tr><td>${h.label}</td><td class="${Math.abs(h.mid) <= S.tol / 2 ? 'good-t' : ''}">${signed(h.mid)}</td><td>±${h.sd.toFixed(1)} ¢</td><td>${h.time !== null ? h.time.toFixed(1) + ' s' : '—'}</td></tr>`).join('')
-      : '<tr class="empty"><td colspan="4">Noch keine Treffer. Ziel anhören, dann singen und halten.</td></tr>';
+      ? log.map((h) => `<tr><td>${h.label}</td><td class="${h.ok ? 'good-t' : ''}">${signed(h.mid)}</td><td>±${h.sd.toFixed(1)} ¢</td><td>${h.time}</td></tr>`).join('')
+      : `<tr class="empty"><td colspan="4">${S.feedback === 'danach' ? 'Noch nichts gesungen. Ziel anhören, Ton singen und absetzen.' : 'Noch keine Treffer. Ziel anhören, dann singen und halten.'}</td></tr>`;
+  }
+  function renderFeedbackMode() {
+    segSet('seg-view', S.view);
+    segSet('seg-fb', S.feedback);
+    $('fb-hint').textContent = S.feedback === 'danach'
+      ? 'Beim Singen zeigt die App nichts an. Wenn du absetzt, kommt das Ergebnis: die Mitte des gehaltenen Tons, ohne Einschwingen und Ausklang. So gibt es nichts, gegen das man anregeln kann.'
+      : S.view === 'ruhig'
+        ? `Gedämpft: Die Anzeige folgt der Stimme mit ${TAU} s Verzögerung, die Zahl ändert sich höchstens viermal pro Sekunde, und der Zielbereich hat eine Hysterese, damit die Farbe an der Grenze nicht flackert.`
+        : 'Direkt: jeder Messwert sofort, etwa 50-mal pro Sekunde. Gut zum Ansehen von Vibrato, schlecht zum Üben.';
+  }
+  function resetFeedback() {
+    hit.since = null; hit.vals = []; hit.needLeave = false;
+    inZone = false; shownDev = null;
+    aft.start = null; aft.pts = [];
+    holdBar(0);
+    showDev(null, false, true);
+    setStatus('');
   }
 
   function setTarget(idx) {
     S.step = idx;
-    hit.since = null; hit.vals = []; hit.needLeave = false; hit.targetAt = mic ? ac.currentTime : null;
+    resetFeedback();
+    hit.targetAt = mic ? ac.currentTime : null;
     save();
     renderTarget();
   }
@@ -814,16 +962,18 @@
     g.fillStyle = C['accent-hi'];
     g.fillText(gridLabel(S.step), W - padR + 6, y(0));
 
-    // Tonhöhe
+    // Tonhöhe; ruhig: gedämpft und in einer Farbe, direkt: Messwerte, grün im Bereich
     let prev = null;
+    const quiet = calm();
     g.lineWidth = 2.5; g.lineCap = 'round';
     for (const fr of hist) {
       if (now - fr.t > span) continue;
-      if (!fr.f) { prev = null; continue; }
-      const d = clamp(deviation(fr.f), -R, R);
+      const v = quiet ? fr.fs : fr.f;
+      if (!v) { prev = null; continue; }
+      const d = clamp(deviation(v), -R, R);
       const px = x(fr.t), py = y(d);
       if (prev && fr.t - prev.t < 0.1) {
-        g.strokeStyle = Math.abs(d) <= S.tol ? C.good : C.text;
+        g.strokeStyle = quiet || Math.abs(d) > S.tol ? C.text : C.good;
         g.beginPath(); g.moveTo(prev.px, prev.py); g.lineTo(px, py); g.stroke();
       }
       prev = { t: fr.t, px, py };
@@ -1051,6 +1201,7 @@
   }
   function renderAll() {
     renderSettings();
+    renderFeedbackMode();
     renderTarget();
     renderLog();
     renderNotes();
@@ -1068,6 +1219,19 @@
   $('tg-up').addEventListener('click', () => setTarget(S.step + 1));
   $('ctl-random').addEventListener('change', (e) => { S.random = e.target.checked; save(); if (S.random) randomTarget(); });
   $('btn-play').addEventListener('click', () => playSeq([targetFreq()], 1.4));
+  $('seg-view').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b || b.dataset.v === S.view) return;
+    S.view = b.dataset.v; save();
+    resetFeedback(); renderFeedbackMode();
+    if (!mic && S.tab === 'hit') drawTrace(0);
+  });
+  $('seg-fb').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b || b.dataset.v === S.feedback) return;
+    S.feedback = b.dataset.v; save();
+    resetFeedback(); renderFeedbackMode(); renderLog();
+  });
 
   $('btn-rec').addEventListener('click', () => { if (rec) stopRec(); else startRec(); });
   $('btn-clear').addEventListener('click', () => {

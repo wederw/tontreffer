@@ -26,7 +26,17 @@ einer halben Minute.
 - Ziel aus einem Raster (5- bis 72-EDO, Grundton frei wählbar) oder aus der eigenen Skala
 - Ziel anhören. Solange der Bezugston klingt, misst die App nicht, damit sie nicht den
   Lautsprecher misst.
-- Abweichung live in Cent, als Zahl und als Nadel
+- Abweichung live in Cent, als Zahl und als Nadel. Standard ist die **ruhige Anzeige**:
+  - Die Tonhöhe ist mit 0.3 s Zeitkonstante gedämpft.
+  - Die Zahl ändert sich höchstens viermal pro Sekunde.
+  - Der Zielbereich hat eine Hysterese.
+  - Kurze Aussetzer bis 0.35 s werden überbrückt.
+
+  Ohne diese Dämpfung regelt man mit der eigenen Reaktionszeit gegen Rauschen und
+  Vibrato an und pendelt um das Ziel. Die direkte Anzeige zeigt jeden Messwert.
+- Rückmeldung **„Erst danach“**: Beim Singen zeigt die App nichts an. Sobald du
+  absetzt, kommt das Ergebnis, also die Mitte des gehaltenen Tons ohne Einschwingen
+  und Ausklang.
 - Verlauf der letzten 8 Sekunden, mit Zielbereich, Nachbarschritten des Rasters und
   12-TET-Lagen
 - Ein Treffer zählt, wenn die Stimme ±5 bis ±30 ¢ um das Ziel 0.3 bis 1 s hält.
