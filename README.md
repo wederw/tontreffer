@@ -4,6 +4,8 @@
 ableiten. Läuft im Browser, ohne Konto, ohne Server, ohne Werbung. Alles bleibt auf
 dem Gerät.
 
+**Online:** https://wederw.github.io/tontreffer/ (auch auf dem Handy)
+
 ## Starten
 
 **PC:** `index.html` im Browser öffnen (Chrome, Edge oder Firefox). Der Browser fragt
@@ -14,8 +16,9 @@ Falls der Browser trotzdem ablehnt: im Ordner `python -m http.server 8000` start
 `http://localhost:8000` öffnen.
 
 **Handy:** Browser geben das Mikrofon nur frei, wenn die Seite über **https** kommt.
-Ein Aufruf über das WLAN (`http://192.168.…`) reicht nicht. Die drei Dateien müssen
-also auf einer https-Adresse liegen, zum Beispiel kostenlos über GitHub Pages.
+Ein Aufruf über das WLAN (`http://192.168.…`) reicht nicht. Deshalb liegt die App
+auf GitHub Pages (Adresse oben). Jeder Push auf `main` aktualisiert sie nach etwa
+einer halben Minute.
 
 ## Was die App kann
 
