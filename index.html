@@ -127,21 +127,15 @@
   .stepper button { width: 44px; min-height: 42px; border: 0; background: var(--panel-2); color: var(--text); font: 600 20px/1 var(--f-ui); cursor: pointer; }
   .stepper button:hover { color: var(--accent-hi); }
   .stepper output { display: grid; place-items: center; min-width: 120px; padding: 0 12px; font: 600 16px var(--f-mono); }
-  .dev-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px 22px; }
-  @media (max-width: 560px) { .dev-row { grid-template-columns: minmax(0, 1fr); } }
-  .dev-big { font: 700 clamp(44px, 12vw, 72px)/1 var(--f-label); font-variant-numeric: tabular-nums; min-width: 4.2ch; color: var(--dim); }
+  .hit-view { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: center; gap: 16px 22px; }
+  @media (max-width: 620px) { .hit-view { grid-template-columns: minmax(0, 1fr); } }
+  #ladder { display: block; width: 100%; height: 280px; background: var(--inset); border: 1px solid var(--line); border-radius: 8px; }
+  .hit-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .dev-big { font: 700 clamp(40px, 10vw, 64px)/1 var(--f-label); font-variant-numeric: tabular-nums; color: var(--dim); text-transform: uppercase; letter-spacing: .02em; }
   .dev-big.in { color: var(--good); }
   .dev-big.out { color: var(--text); }
-  .meter { position: relative; height: 54px; }
-  .m-track { position: absolute; left: 0; right: 0; top: 14px; height: 14px; border-radius: 7px; background: var(--inset); border: 1px solid var(--line-2); }
-  .m-zone { position: absolute; top: 14px; height: 14px; background: var(--good-soft); border-left: 1px solid var(--good); border-right: 1px solid var(--good); }
-  .m-mid { position: absolute; left: 50%; top: 8px; height: 26px; width: 2px; margin-left: -1px; background: var(--accent); }
-  .m-needle { position: absolute; top: 4px; width: 4px; height: 34px; margin-left: -2px; border-radius: 2px; background: var(--text); box-shadow: 0 0 0 2px var(--panel); transition: left .06s linear; }
-  .m-needle.in { background: var(--good); }
-  .m-needle.off { opacity: 0; }
-  .holdbar { height: 6px; border-radius: 3px; background: var(--inset); border: 1px solid var(--line); overflow: hidden; }
+  .holdbar { height: 8px; border-radius: 4px; background: var(--inset); border: 1px solid var(--line); overflow: hidden; }
   #hold-fill { height: 100%; width: 0; background: var(--good); }
-  .m-scale { position: absolute; left: 0; right: 0; top: 36px; display: flex; justify-content: space-between; font: 500 11px var(--f-mono); color: var(--dim); }
   .status { margin: 0; min-height: 1.6em; font: 600 15px/1.4 var(--f-ui); color: var(--muted); }
   .status.good { color: var(--good); }
   canvas.plot { display: block; width: 100%; height: 240px; background: var(--inset); border: 1px solid var(--line); border-radius: 8px; touch-action: pan-y; }
@@ -235,12 +229,23 @@
   <section class="panel" id="pane-hit" role="tabpanel" aria-labelledby="tab-hit">
     <div class="row">
       <div class="field">
-        <span class="lbl" id="l-source">Ziele aus</span>
-        <div class="seg" role="group" aria-labelledby="l-source" id="seg-source">
-          <button type="button" data-v="edo">Raster</button>
-          <button type="button" data-v="mine">Meine Skala</button>
-        </div>
+        <label class="lbl" for="hit-scale">Skala</label>
+        <select id="hit-scale"></select>
       </div>
+      <div class="field" id="f-edo">
+        <label class="lbl" for="ctl-edo">Raster</label>
+        <select id="ctl-edo"></select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="ctl-root">Grundton</label>
+        <select id="ctl-root"></select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="ctl-oct">Oktave</label>
+        <select id="ctl-oct"></select>
+      </div>
+    </div>
+    <div class="row">
       <div class="field">
         <span class="lbl" id="l-target">Ziel</span>
         <div class="stepper" role="group" aria-labelledby="l-target">
@@ -271,26 +276,22 @@
     <p class="hint" id="fb-hint"></p>
     <p class="readout" id="tg-info"></p>
 
-    <div class="dev-row">
-      <div class="dev-big" id="dev-big" aria-live="off">—</div>
-      <div class="meter" aria-hidden="true">
-        <div class="m-track"></div>
-        <div class="m-zone" id="m-zone"></div>
-        <div class="m-mid"></div>
-        <div class="m-needle off" id="m-needle"></div>
-        <div class="m-scale"><span id="m-lo"></span><span>0 ¢</span><span id="m-hi"></span></div>
+    <div class="hit-view">
+      <canvas id="ladder" aria-label="Leiter: deine Tonhöhe im Bereich ±150 Cent um das Ziel, oben ist höher"></canvas>
+      <div class="hit-side">
+        <div class="dev-big" id="dev-big" aria-live="off">—</div>
+        <div class="holdbar" aria-hidden="true"><div id="hold-fill"></div></div>
+        <p class="status" id="hit-status" aria-live="polite"></p>
       </div>
     </div>
-    <div class="holdbar" aria-hidden="true"><div id="hold-fill"></div></div>
-    <p class="status" id="hit-status" aria-live="polite"></p>
-
-    <canvas class="plot" id="trace" aria-label="Tonhöhe der letzten acht Sekunden relativ zum Ziel"></canvas>
     <ul class="legend">
       <li><i class="lg-acc"></i>Ziel</li>
       <li><i class="lg-good"></i>Bereich ±<span id="lg-tol"></span> ¢</li>
-      <li><i class="lg-dim"></i>Nachbarschritte des Rasters</li>
+      <li><i class="lg-dim"></i>Nachbarstufen der Skala</li>
       <li><i class="lg-tick"></i>12-TET</li>
     </ul>
+
+    <canvas class="plot" id="trace" aria-label="Tonhöhe der letzten acht Sekunden relativ zum Ziel"></canvas>
 
     <div class="table-wrap">
       <table>
@@ -384,21 +385,7 @@
 
   <!-- Einstellungen -->
   <section class="panel" id="pane-set" role="tabpanel" aria-labelledby="tab-set" hidden>
-    <div class="row">
-      <div class="field">
-        <label class="lbl" for="ctl-edo">Raster (Schritte pro Oktave)</label>
-        <select id="ctl-edo"></select>
-      </div>
-      <div class="field">
-        <label class="lbl" for="ctl-root">Grundton</label>
-        <select id="ctl-root"></select>
-      </div>
-      <div class="field">
-        <label class="lbl" for="ctl-oct">Oktave</label>
-        <select id="ctl-oct"></select>
-      </div>
-    </div>
-    <p class="readout" id="root-info"></p>
+    <p class="hint">Skala, Raster und Grundton stellst du direkt unter „Ton treffen“ ein.</p>
     <div class="row">
       <div class="field">
         <span class="lbl" id="l-tol">Treffer-Bereich</span>
@@ -438,7 +425,7 @@
       <p>Das Mikrofonsignal wird etwa 50-mal pro Sekunde in Blöcken von <span id="info-block">2048 Samples</span> ausgewertet. Für jede Verschiebung τ misst die App, wie sehr sich das Signal von sich selbst unterscheidet: <code>d(τ) = Σ (x_j − x_{j+τ})²</code>. Bei der Periode T des Tons ist d fast null, die Frequenz ist <code>f = Abtastrate / T</code>. Bruchteile eines Samples kommen aus einer Parabel durch die drei Werte um das Minimum (YIN-Verfahren, de Cheveigné &amp; Kawahara 2002). Bei einem sauberen Ton ist das auf weniger als 1 ¢ genau.</p>
       <p>Abweichungen stehen in Cent: <code>1200 · log₂(f / f_Ziel)</code>. 100 ¢ sind ein 12-TET-Halbton, 1200 ¢ eine Oktave.</p>
       <p>Echo-Unterdrückung, Rauschfilter und automatische Pegelanpassung des Browsers sind ausgeschaltet, weil sie das Signal verändern.</p>
-      <p>Die ruhige Anzeige dämpft die Tonhöhe mit einer Zeitkonstante von 0.3 s. Das ist ein gleitender Mittelwert in Cent, der Vibrato und Messrauschen glättet. Ein Sprung über 150 ¢ gilt als neuer Ton und wird sofort übernommen. Zahlen ändern sich höchstens viermal pro Sekunde und erst ab 2 ¢ Unterschied. Der Zielbereich hat eine Hysterese: hinein bei ±Bereich, hinaus erst 30 % weiter draußen. Grund: Wer auf jeden einzelnen Messwert reagiert, regelt mit seiner Reaktionszeit von etwa 0.2 s gegen Rauschen an und pendelt um das Ziel.</p>
+      <p>Die ruhige Anzeige ist ein Kompromiss aus zwei Fehlern. Zeigt sie jeden Messwert, regelt man gegen Rauschen und Vibrato an. Glättet sie stark, läuft sie hinterher, und man korrigiert zu spät und schießt über. Deshalb wird nur kurz geglättet: Median über 0.1 s gegen Ausreißer, dann ein gleitender Mittelwert mit 0.12 s Zeitkonstante. Ein Sprung über 150 ¢ gilt als neuer Ton und wird sofort übernommen. Ruhe kommt aus dem Maßstab, nicht aus der Glättung: Die Leiter zeigt ±150 ¢, kleine Schwankungen bleiben klein. Im Zielbereich steht keine Zahl, sondern „im Ziel“. Der Bereich hat eine Hysterese: hinein bei ±Bereich, hinaus erst 30 % weiter draußen. Außerhalb ändert sich die Zahl höchstens viermal pro Sekunde und erst ab 3 ¢.</p>
       <p>Ein gesungener Ton wird als Ton gezählt, wenn seine Tonhöhe weniger als 45 ¢ um ihre laufende Mitte schwankt. Vibrato-Ausschläge, die zurückkommen, gehören dazu. Einschwingen und Ausklang (je 15 %) zählen nicht zur Tonhöhe. Mit Vibrato ist die Mitte der Mittelwert, ohne Vibrato der Median.</p>
     </div>
   </section>
@@ -465,9 +452,30 @@
 
   // ---------- Einstellungen ----------
   const KEY = 'tontreffer.v1';
+  // Skalen wie im Mikrotonalen Synth, als Schrittfolgen im jeweiligen Raster
+  const PRESETS = [
+    { id: '12-dur', edo: 12, name: 'Dur', pattern: [2, 2, 1, 2, 2, 2, 1] },
+    { id: '12-penta', edo: 12, name: 'Dur-Pentatonik', pattern: [2, 2, 3, 2, 3] },
+    { id: '5-slendro', edo: 5, name: 'Slendro-nah', pattern: [1, 1, 1, 1, 1] },
+    { id: '7-thai', edo: 7, name: 'Thai-gleichstufig', pattern: [1, 1, 1, 1, 1, 1, 1] },
+    { id: '16-mavila', edo: 16, name: 'Mavila [7]', pattern: [2, 2, 3, 2, 2, 2, 3] },
+    { id: '19-dur', edo: 19, name: 'Diatonisches Dur', pattern: [3, 3, 2, 3, 3, 3, 2] },
+    { id: '22-porcupine', edo: 22, name: 'Porcupine [7]', pattern: [3, 3, 3, 3, 3, 3, 4] },
+    { id: '22-superpyth', edo: 22, name: 'Superpyth-Dur', pattern: [4, 4, 1, 4, 4, 4, 1] },
+    { id: '24-rast', edo: 24, name: 'Maqam Rast', pattern: [4, 3, 3, 4, 4, 3, 3] },
+    { id: '24-bayati', edo: 24, name: 'Maqam Bayati', pattern: [3, 3, 4, 4, 2, 4, 4] },
+    { id: '24-mohajira', edo: 24, name: 'Mohajira [7]', pattern: [4, 3, 4, 3, 4, 3, 3] },
+    { id: '31-mittelton', edo: 31, name: 'Mitteltönig Dur', pattern: [5, 5, 3, 5, 5, 5, 3] },
+    { id: '31-orwell', edo: 31, name: 'Orwell [9]', pattern: [4, 3, 4, 3, 4, 3, 4, 3, 3] },
+    { id: '41-pyth', edo: 41, name: 'Pythagoreisches Dur', pattern: [7, 7, 3, 7, 7, 7, 3] },
+    { id: '53-rein', edo: 53, name: 'Reines Dur (Zarlino)', pattern: [9, 8, 5, 9, 8, 9, 5] },
+    { id: '53-pyth', edo: 53, name: 'Pythagoreisches Dur', pattern: [9, 9, 4, 9, 9, 9, 4] },
+    { id: '72-obertoene', edo: 72, name: 'Obertöne 8–16', pattern: [12, 11, 10, 9, 8, 8, 7, 7] },
+  ];
+
   const DEFAULTS = {
-    edo: 12, root: 9, rootOct: 3, tol: 10, hold: 0.6, octFree: true, gate: -55,
-    source: 'edo', step: 0, random: false, range: 1,
+    edo: 12, root: 9, rootOct: 3, rootSung: true, tol: 10, hold: 0.6, octFree: true, gate: -55,
+    scale: 'edo', step: 0, random: false, range: 1,
     refMode: 'first', merge: 35, minDur: 0.3, tab: 'hit',
     view: 'ruhig', feedback: 'live',
   };
@@ -479,6 +487,7 @@
       if (o) {
         for (const k of Object.keys(DEFAULTS)) if (typeof o[k] === typeof DEFAULTS[k]) s[k] = o[k];
         if (o.mine && typeof o.mine.fref === 'number' && Array.isArray(o.mine.degrees) && o.mine.degrees.length) mine = o.mine;
+        if (o.source === 'mine' && typeof o.scale !== 'string') s.scale = 'mine';   // ältere Fassung
       }
     } catch (_) { /* ohne Speicher */ }
     s.edo = clamp(Math.round(s.edo), 5, 72);
@@ -495,8 +504,8 @@
     if (!['live', 'danach'].includes(s.feedback)) s.feedback = 'live';
     s.gate = clamp(Math.round(s.gate), -80, -25);
     s.step = Math.round(s.step) || 0;
-    if (s.source === 'mine' && !mine) s.source = 'edo';
-    if (!['edo', 'mine'].includes(s.source)) s.source = 'edo';
+    if (s.scale === 'mine' && !mine) s.scale = 'edo';
+    if (!['edo', 'mine'].includes(s.scale) && !PRESETS.some((p) => p.id === s.scale)) s.scale = 'edo';
     return { s, mine };
   }
   const loaded = load();
@@ -506,29 +515,37 @@
     try { localStorage.setItem(KEY, JSON.stringify({ ...S, mine })); } catch (_) { /* egal */ }
   }
 
-  // ---------- Bezug, Raster, Ziel ----------
-  const settingsRoot = () => 440 * Math.pow(2, (S.root - 9) / 12) * Math.pow(2, S.rootOct - 4);
-  const useMine = () => S.source === 'mine' && !!mine;
-  const rootFreq = () => (useMine() ? mine.fref : settingsRoot());
-  const gridSize = () => (useMine() ? mine.degrees.length : S.edo);
-  function gridCents(idx) {
-    if (useMine()) {
-      const n = mine.degrees.length;
-      return mine.degrees[mod(idx, n)].c + 1200 * Math.floor(idx / n);
+  // ---------- Bezug, Skala, Ziel ----------
+  // Die Skala ist eine Liste von Stufen in Cent über dem Grundton (eine Oktave).
+  // Quelle: alle Schritte eines Rasters, eine Vorlage oder die gesungene Skala.
+  let SD = null;
+  function buildScale() {
+    if (S.scale === 'mine' && mine) {
+      SD = { kind: 'mine', N: null, pcs: null, cents: mine.degrees.map((d) => d.c), name: `Meine Skala, ${mine.degrees.length} Stufen` };
+      return;
     }
-    return idx * 1200 / S.edo;
+    const p = PRESETS.find((x) => x.id === S.scale);
+    if (p) {
+      const pcs = [0];
+      p.pattern.slice(0, -1).forEach((st) => pcs.push(pcs[pcs.length - 1] + st));
+      SD = { kind: 'preset', N: p.edo, pcs, cents: pcs.map((k) => k * 1200 / p.edo), name: `${p.edo}-EDO ${p.name}` };
+      return;
+    }
+    const pcs = Array.from({ length: S.edo }, (_, k) => k);
+    SD = { kind: 'edo', N: S.edo, pcs, cents: pcs.map((k) => k * 1200 / S.edo), name: `${S.edo}-EDO, alle Schritte` };
   }
+  const noteRoot = () => 440 * Math.pow(2, (S.root - 9) / 12) * Math.pow(2, S.rootOct - 4);
+  const sungRoot = () => SD.kind === 'mine' && S.rootSung;
+  const rootFreq = () => (sungRoot() ? mine.fref : noteRoot());
+  const gridSize = () => SD.cents.length;
+  const gridCents = (idx) => SD.cents[mod(idx, SD.cents.length)] + 1200 * Math.floor(idx / SD.cents.length);
   function gridLabel(idx) {
     const n = gridSize(), oct = Math.floor(idx / n), k = mod(idx, n);
-    const base = useMine() ? `Stufe ${k + 1}` : `${k}\\${n}`;
+    const base = SD.kind === 'edo' ? `${k}\\${n}` : `Stufe ${k + 1}`;
     return oct ? `${base} ${oct > 0 ? '+' : MINUS}${Math.abs(oct)} Okt.` : base;
   }
   function nearestGrid(c) {
-    if (!useMine()) {
-      const st = 1200 / S.edo, k = Math.round(c / st);
-      return { idx: k, dev: c - k * st };
-    }
-    const n = mine.degrees.length, oct = Math.floor(c / 1200);
+    const n = gridSize(), oct = Math.floor(c / 1200);
     let best = null;
     for (let i = -1; i <= n; i++) {
       const idx = oct * n + i, dv = c - gridCents(idx);
@@ -536,10 +553,9 @@
     }
     return best;
   }
-  // kleinster Abstand zweier Nachbarn im Raster, für die Skala der Kurve
+  // kleinster Abstand zweier Nachbarstufen, für die Höhe der Verlaufskurve
   function gridSpacing() {
-    if (!useMine()) return 1200 / S.edo;
-    const cs = mine.degrees.map((d) => d.c);
+    const cs = SD.cents;
     let m = 1200;
     cs.forEach((c, i) => { m = Math.min(m, (i + 1 < cs.length ? cs[i + 1] : 1200) - c); });
     return m;
@@ -638,12 +654,14 @@
   }
 
   // ---------- Messschleife ----------
-  // Ruhige Anzeige: Die Tonhöhe wird gedämpft (Zeitkonstante TAU), Zahlen
-  // ändern sich höchstens alle UI_DT Sekunden, kurze Aussetzer bis HOLD_GAP
-  // werden überbrückt. Sonst regelt man gegen Rauschen und Vibrato an und
-  // pendelt um das Ziel. Direkte Anzeige: jeder Messwert sofort.
-  const TAU = 0.3, UI_DT = 0.25, HOLD_GAP = 0.35, JUMP = 150;
-  const hist = [];     // { t, f, fs } der letzten Sekunden; fs gedämpft
+  // Ruhige Anzeige: Median der letzten MED_WIN Sekunden gegen Ausreißer, dann
+  // nur leicht gedämpft (TAU). Mehr Dämpfung hieße mehr Verzögerung, und
+  // Verzögerung in einem Regelkreis macht das Überschießen größer: Man sieht
+  // „zu hoch“ erst, wenn man schon längst wieder fällt. Zahlen ändern sich
+  // höchstens alle UI_DT Sekunden, kurze Aussetzer bis HOLD_GAP werden
+  // überbrückt. Direkte Anzeige: jeder Messwert sofort.
+  const TAU = 0.12, MED_WIN = 0.1, UI_DT = 0.25, HOLD_GAP = 0.35, JUMP = 150;
+  const hist = [];     // { t, f, fs } der letzten Sekunden; fs geglättet
   const sm = { c: null, lastVoice: -Infinity, db: -90 };
   let lastT = 0, uiAt = 0;
   const calm = () => S.view === 'ruhig';
@@ -660,18 +678,21 @@
     const r = mic.detect(mic.buf, S.gate);
     const f = t >= muteUntil && r.f && r.conf >= 0.7 ? r.f : null;
 
-    // Dämpfung in Cent; ein Sprung über JUMP ¢ ist ein neuer Ton und wird sofort übernommen
+    const fr = { t, f, fs: null };
+    hist.push(fr);
+    while (hist.length && t - hist[0].t > 10) hist.shift();
+
+    // Glättung in Cent; ein Sprung über JUMP ¢ ist ein neuer Ton und wird sofort übernommen
     if (f) {
-      const c = 1200 * Math.log2(f / 440);
+      const cs = [];
+      for (let i = hist.length - 1; i >= 0 && t - hist[i].t <= MED_WIN; i--) if (hist[i].f) cs.push(1200 * Math.log2(hist[i].f / 440));
+      const c = median(cs);
       if (sm.c === null || t - sm.lastVoice > HOLD_GAP || Math.abs(c - sm.c) > JUMP) sm.c = c;
       else sm.c = ema(sm.c, c, dt, TAU);
       sm.lastVoice = t;
     } else if (t - sm.lastVoice > HOLD_GAP) sm.c = null;
     const fSm = sm.c === null ? null : 440 * Math.pow(2, sm.c / 1200);
-
-    const fr = { t, f, fs: f ? fSm : null };
-    hist.push(fr);
-    while (hist.length && t - hist[0].t > 10) hist.shift();
+    if (f) fr.fs = fSm;
 
     if (rec) {
       rec.frames.push(fr);
@@ -694,7 +715,10 @@
     }
     if (S.feedback === 'danach') afterUpdate(t, f);
     else hitUpdate(t, fShow, f, uiNow);
-    if (S.tab === 'hit' && S.feedback !== 'danach') drawTrace(t);
+    if (S.tab === 'hit') {
+      drawLadder();
+      if (S.feedback !== 'danach') drawTrace(t);
+    }
     if (S.tab === 'scale' && rec) drawRec(t);
   }
 
@@ -732,7 +756,6 @@
   const hit = { since: null, vals: [], lastIn: 0, needLeave: false, targetAt: null };
   const log = [];
 
-  function meterRange() { return Math.max(50, 2 * S.tol); }
   // Zielbereich mit Hysterese: hinein bei ±tol, hinaus erst bei ±(tol + h).
   // Sonst flackert die Farbe genau an der Grenze.
   let inZone = false;
@@ -742,34 +765,88 @@
     inZone = inZone ? Math.abs(d) <= S.tol + h : Math.abs(d) <= S.tol;
     return inZone;
   }
+  // Was die Leiter zeigt: Abweichung vom Ziel und ob sie im Bereich ist
+  let mark = null;
   let shownDev = null;
   function showDev(d, inz, uiNow) {
-    const big = $('dev-big'), needle = $('m-needle');
-    if (d === null) {
-      if (uiNow) { big.textContent = '—'; big.className = 'dev-big'; shownDev = null; }
-      needle.classList.add('off');
-      return;
-    }
-    const R = meterRange();
-    needle.style.left = (50 + clamp(d / R, -1, 1) * 50) + '%';
-    needle.classList.remove('off');
-    needle.classList.toggle('in', inz);
+    mark = d === null ? null : { d, inz };
     if (!uiNow) return;
-    const cls = 'dev-big ' + (inz ? 'in' : 'out');
+    const big = $('dev-big');
+    let txt = null, cls;
+    if (d === null) {
+      txt = '—'; cls = 'dev-big'; shownDev = null;
+    } else if (inz && calm()) {
+      // im Bereich keine Zahl: es gibt nichts mehr nachzuregeln
+      txt = 'im Ziel'; cls = 'dev-big in'; shownDev = null;
+    } else {
+      cls = 'dev-big ' + (inz ? 'in' : 'out');
+      if (!calm() || shownDev === null || Math.abs(d - shownDev) >= 3) { shownDev = d; txt = `${signed(d, 0)} ¢`; }
+    }
+    if (txt !== null && big.textContent !== txt) big.textContent = txt;
     if (big.className !== cls) big.className = cls;
-    // ruhig: die Zahl springt erst, wenn sich der Wert um mindestens 2 ¢ bewegt hat
-    if (calm() && shownDev !== null && Math.abs(d - shownDev) < 2) return;
-    shownDev = d;
-    big.textContent = `${signed(d, 0)} ¢`;
   }
   function holdBar(p) { $('hold-fill').style.width = (p * 100).toFixed(1) + '%'; }
-  function renderMeter() {
-    const R = meterRange();
-    $('m-zone').style.left = (50 - S.tol / R * 50) + '%';
-    $('m-zone').style.width = (S.tol / R * 100) + '%';
-    $('m-lo').textContent = `${MINUS}${R} ¢`;
-    $('m-hi').textContent = `+${R} ¢`;
-    $('lg-tol').textContent = S.tol;
+  function renderTol() { $('lg-tol').textContent = S.tol; }
+
+  // Leiter: ±LADDER ¢ um das Ziel, oben ist höher. Ein weiter Bereich hält
+  // kleine Schwankungen klein, so springt nichts über die ganze Breite.
+  const LADDER = 150;
+  function drawLadder() {
+    const cv = $('ladder');
+    if (!cv.clientWidth) return;
+    const { g, W, H } = fitCanvas(cv);
+    g.clearRect(0, 0, W, H);
+    const padL = 52, padR = 104, x0 = padL, x1 = W - padR;
+    const half = H / 2 - 16;
+    const y = (d) => H / 2 - d / LADDER * half;
+    g.font = '11px ' + css.getPropertyValue('--f-mono');
+    g.textBaseline = 'middle';
+    g.textAlign = 'left';
+
+    g.fillStyle = 'rgba(60, 193, 131, .16)';
+    g.fillRect(x0, y(S.tol), x1 - x0, y(-S.tol) - y(S.tol));
+
+    // 12-TET-Lagen, Namen links
+    const a = 1200 * Math.log2(targetFreq() / 440);
+    for (let j = Math.ceil((a - LADDER) / 100); j <= Math.floor((a + LADDER) / 100); j++) {
+      const yy = y(100 * j - a);
+      g.strokeStyle = C.line; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, yy); g.lineTo(x1, yy); g.stroke();
+      const n = note12(440 * Math.pow(2, j / 12));
+      g.fillStyle = C.dim;
+      g.fillText(`${n.name}${n.octave}`, 6, yy);
+    }
+    // Nachbarstufen der Skala, Namen rechts (bei engem Raster nur jede k-te)
+    const tc = targetCents(), n = gridSize();
+    const every = Math.max(1, Math.ceil(15 / (gridSpacing() / LADDER * half)));
+    for (let k = -2 * n; k <= 2 * n; k++) {
+      if (k === 0) continue;
+      const idx = S.step + k, d = gridCents(idx) - tc;
+      if (Math.abs(d) > LADDER) continue;
+      const yy = y(d);
+      g.strokeStyle = C['line-2']; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(x0, yy); g.lineTo(x1, yy); g.stroke();
+      if (mod(k, every) === 0) { g.fillStyle = C.dim; g.fillText(gridLabel(idx), x1 + 8, yy); }
+    }
+    g.strokeStyle = C.accent; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(x0, y(0)); g.lineTo(x1, y(0)); g.stroke();
+    g.fillStyle = C['accent-hi'];
+    g.fillText(gridLabel(S.step), x1 + 8, y(0));
+
+    // die Stimme
+    if (!mark) return;
+    const xm = (x0 + x1) / 2, bw = (x1 - x0) * 0.55;
+    g.fillStyle = mark.inz ? C.good : C.text;
+    if (Math.abs(mark.d) > LADDER) {
+      // weiter weg, als die Leiter reicht: Pfeil am Rand
+      const up = mark.d > 0, yy = up ? 6 : H - 6, dir = up ? 1 : -1;
+      g.beginPath(); g.moveTo(xm, yy); g.lineTo(xm - 14, yy + dir * 14); g.lineTo(xm + 14, yy + dir * 14); g.closePath(); g.fill();
+      return;
+    }
+    const yy = y(mark.d);
+    g.beginPath();
+    if (g.roundRect) g.roundRect(xm - bw / 2, yy - 5, bw, 10, 5); else g.rect(xm - bw / 2, yy - 5, bw, 10);
+    g.fill();
   }
   function setStatus(msg, good) {
     const el = $('hit-status');
@@ -831,7 +908,7 @@
         aft.pts = []; aft.start = t;
         setStatus('Singen … das Ergebnis kommt, wenn du absetzt');
         const big = $('dev-big'); big.textContent = '…'; big.className = 'dev-big';
-        $('m-needle').classList.add('off');
+        mark = null;
         holdBar(0);
       }
       aft.pts.push({ t, d: deviation(fRaw) });
@@ -853,10 +930,7 @@
     const big = $('dev-big');
     big.textContent = `${signed(mid, 0)} ¢`;
     big.className = 'dev-big ' + (ok ? 'in' : 'out');
-    const needle = $('m-needle');
-    needle.style.left = (50 + clamp(mid / meterRange(), -1, 1) * 50) + '%';
-    needle.classList.remove('off');
-    needle.classList.toggle('in', ok);
+    mark = { d: mid, inz: ok };
     setStatus(`${ok ? 'Getroffen' : (mid > 0 ? 'Zu hoch' : 'Zu tief')}: Mitte ${signed(mid)} ¢, Streuung ±${sd.toFixed(1)} ¢`, ok);
     log.unshift({ label: gridLabel(S.step), mid, sd, ok, time: `${dur.toFixed(1)} s gesungen` });
     if (log.length > 20) log.pop();
@@ -876,8 +950,8 @@
     $('fb-hint').textContent = S.feedback === 'danach'
       ? 'Beim Singen zeigt die App nichts an. Wenn du absetzt, kommt das Ergebnis: die Mitte des gehaltenen Tons, ohne Einschwingen und Ausklang. So gibt es nichts, gegen das man anregeln kann.'
       : S.view === 'ruhig'
-        ? `Gedämpft: Die Anzeige folgt der Stimme mit ${TAU} s Verzögerung, die Zahl ändert sich höchstens viermal pro Sekunde, und der Zielbereich hat eine Hysterese, damit die Farbe an der Grenze nicht flackert.`
-        : 'Direkt: jeder Messwert sofort, etwa 50-mal pro Sekunde. Gut zum Ansehen von Vibrato, schlecht zum Üben.';
+        ? `Ruhig: Die Leiter zeigt ±${LADDER} ¢ um das Ziel, kleine Schwankungen bleiben dort klein. Geglättet wird nur kurz (Median über ${MED_WIN} s, dann ${TAU} s), weil eine nachlaufende Anzeige einen überschießen lässt. Im Zielbereich steht nur „im Ziel“, keine Zahl.`
+        : 'Direkt: jeder Messwert sofort, etwa 50-mal pro Sekunde, auch im Zielbereich als Zahl. Gut zum Ansehen von Vibrato, schlecht zum Üben.';
   }
   function resetFeedback() {
     hit.since = null; hit.vals = []; hit.needLeave = false;
@@ -903,16 +977,15 @@
     playSeq([targetFreq()], 1.2);
   }
   function renderTarget() {
-    segSet('seg-source', S.source);
-    $('seg-source').querySelector('[data-v="mine"]').disabled = !mine;
     $('ctl-random').checked = S.random;
     $('tg-label').textContent = gridLabel(S.step);
-    const f = targetFreq(), c = targetCents();
+    const f = targetFreq(), c = targetCents(), k = mod(S.step, gridSize());
     const r = nearestRatio(c);
-    $('tg-info').textContent = `${c.toFixed(1)} ¢ über dem Grundton · ${f.toFixed(2)} Hz · ≈ ${noteName(f)}`
+    const step = SD.kind === 'preset' ? ` (${SD.pcs[k]}\\${SD.N})` : '';
+    $('tg-info').textContent = `Grundton ${rootFreq().toFixed(2)} Hz · Ziel ${c.toFixed(1)} ¢ darüber${step} · ${f.toFixed(2)} Hz · ≈ ${noteName(f)}`
       + (r ? ` · ≈ ${r.p}/${r.q} ${signed(r.err)} ¢` : '');
     renderSummary();
-    if (!mic && S.tab === 'hit') drawTrace(0);
+    if (!mic && S.tab === 'hit') { drawLadder(); drawTrace(0); }
   }
 
   // Kurve: Abweichung vom Ziel über die letzten 8 s
@@ -991,7 +1064,7 @@
   let scaleRes = null;
 
   function refOpt() {
-    if (S.refMode === 'root') return settingsRoot();
+    if (S.refMode === 'root') return noteRoot();
     return S.refMode;
   }
   async function startRec() {
@@ -1162,8 +1235,7 @@
 
   // ---------- Kopfzeile, Reiter, Steuerung ----------
   function renderSummary() {
-    const sys = useMine() ? `Meine Skala, ${mine.degrees.length} Stufen` : `${S.edo}-EDO`;
-    $('summary').textContent = `${sys} · Grundton ${rootFreq().toFixed(2)} Hz ≈ ${noteName(rootFreq())} · Mikrofon ${mic ? 'an' : 'aus'}`;
+    $('summary').textContent = `${SD.name} · Grundton ${rootFreq().toFixed(2)} Hz ≈ ${noteName(rootFreq())} · Mikrofon ${mic ? 'an' : 'aus'}`;
   }
   function segSet(id, v) {
     $(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === String(v))));
@@ -1175,29 +1247,50 @@
       $('pane-' + k).hidden = k !== t;
     });
     if (t === 'scale') { drawRec(take && take.frames.length ? take.frames[take.frames.length - 1].t : 0); if (scaleRes) renderEdo(scaleRes); }
-    if (t === 'hit' && !mic) drawTrace(0);
+    if (t === 'hit' && !mic) { drawLadder(); drawTrace(0); }
   }
 
   function initSettings() {
-    const edoNames = { 12: 'Standard', 16: 'Mavila', 19: '', 22: 'Shrutis', 24: 'Vierteltöne', 31: 'Huygens', 41: '', 53: 'Mercator', 72: 'Zwölfteltöne' };
+    const edoNames = { 12: 'Standard', 16: 'Mavila', 22: 'Shrutis', 24: 'Vierteltöne', 31: 'Huygens', 53: 'Mercator', 72: 'Zwölfteltöne' };
     $('ctl-edo').innerHTML = Array.from({ length: 68 }, (_, i) => i + 5)
       .map((n) => `<option value="${n}">${n}${edoNames[n] ? ' · ' + edoNames[n] : ''} (${(1200 / n).toFixed(1)} ¢)</option>`).join('');
-    $('ctl-root').innerHTML = NAMES.map((nm, i) => `<option value="${i}">${nm}</option>`).join('');
     $('ctl-oct').innerHTML = [1, 2, 3, 4, 5].map((o) => `<option value="${o}">${o}</option>`).join('');
+    renderScaleOptions();
+  }
+  // Skalenliste: eigene Skala, alle Schritte eines Rasters, Vorlagen nach Raster
+  function renderScaleOptions() {
+    let h = '';
+    if (mine) h += `<optgroup label="Eigene"><option value="mine">Meine Skala (${mine.degrees.length} Stufen, gesungen)</option></optgroup>`;
+    h += '<optgroup label="Raster"><option value="edo">Alle Schritte des Rasters</option></optgroup>';
+    const byEdo = new Map();
+    for (const p of PRESETS) { if (!byEdo.has(p.edo)) byEdo.set(p.edo, []); byEdo.get(p.edo).push(p); }
+    for (const [edo, list] of byEdo) h += `<optgroup label="${edo}-EDO">` + list.map((p) => `<option value="${p.id}">${edo} · ${p.name}</option>`).join('') + '</optgroup>';
+    $('hit-scale').innerHTML = h;
+    // Grundton: bei der eigenen Skala auch „wie gesungen“
+    $('ctl-root').innerHTML = (S.scale === 'mine' && mine ? `<option value="sung">wie gesungen (${mine.fref.toFixed(1)} Hz)</option>` : '')
+      + NAMES.map((nm, i) => `<option value="${i}">${nm}</option>`).join('');
   }
   function renderSettings() {
+    renderScaleOptions();
+    $('hit-scale').value = S.scale;
+    $('f-edo').hidden = S.scale !== 'edo';
     $('ctl-edo').value = String(S.edo);
-    $('ctl-root').value = String(S.root);
+    $('ctl-root').value = sungRoot() ? 'sung' : String(S.root);
     $('ctl-oct').value = String(S.rootOct);
-    const f = settingsRoot();
-    $('root-info').textContent = `Grundton ${NAMES[S.root]}${S.rootOct} = ${f.toFixed(2)} Hz · ein Rasterschritt = ${(1200 / S.edo).toFixed(2)} ¢`
-      + (useMine() ? ' · Zum Üben ist gerade „Meine Skala“ gewählt, sie bringt ihren eigenen Bezugston mit.' : '');
+    $('ctl-oct').disabled = sungRoot();
     segSet('seg-tol', S.tol); segSet('seg-hold', S.hold); segSet('seg-range', S.range);
     segSet('seg-ref', S.refMode); segSet('seg-merge', S.merge); segSet('seg-mindur', S.minDur);
     $('ctl-octfree').checked = S.octFree;
     $('ctl-gate').value = String(S.gate);
     $('gate-out').textContent = `${S.gate} dBFS`;
-    renderMeter();
+    renderTol();
+  }
+  // nach jeder Änderung an Skala, Raster oder Grundton
+  function scaleChanged(keepStep) {
+    buildScale();
+    save();
+    renderSettings();
+    setTarget(keepStep ? S.step : 0);
   }
   function renderAll() {
     renderSettings();
@@ -1211,10 +1304,7 @@
   $('btn-mic').addEventListener('click', () => { if (mic) stopMic(); else startMic(); });
   ['hit', 'scale', 'set'].forEach((k) => $('tab-' + k).addEventListener('click', () => showTab(k)));
 
-  $('seg-source').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b || b.disabled) return;
-    S.source = b.dataset.v; S.step = 0; setTarget(0); renderSettings();
-  });
+  $('hit-scale').addEventListener('change', (e) => { S.scale = e.target.value; scaleChanged(false); });
   $('tg-down').addEventListener('click', () => setTarget(S.step - 1));
   $('tg-up').addEventListener('click', () => setTarget(S.step + 1));
   $('ctl-random').addEventListener('change', (e) => { S.random = e.target.checked; save(); if (S.random) randomTarget(); });
@@ -1224,7 +1314,7 @@
     if (!b || b.dataset.v === S.view) return;
     S.view = b.dataset.v; save();
     resetFeedback(); renderFeedbackMode();
-    if (!mic && S.tab === 'hit') drawTrace(0);
+    if (!mic && S.tab === 'hit') { drawLadder(); drawTrace(0); }
   });
   $('seg-fb').addEventListener('click', (e) => {
     const b = e.target.closest('button');
@@ -1248,9 +1338,9 @@
   $('btn-use').addEventListener('click', () => {
     if (!scaleRes) return;
     mine = { fref: scaleRes.fref, degrees: scaleRes.degrees.map((dg) => ({ c: dg.c, count: dg.count, spread: dg.spread })) };
-    S.source = 'mine';
-    setTarget(0);
-    renderSettings();
+    S.scale = 'mine';
+    S.rootSung = true;
+    scaleChanged(false);
     showTab('hit');
   });
   $('btn-scl').addEventListener('click', () => { if (scaleRes) download(fileBase() + '.scl', T.toScl(scaleRes, { name: fileBase(), kind: 'scl' })); });
@@ -1269,9 +1359,14 @@
     const b = e.target.closest('button'); if (!b) return;
     S.refMode = b.dataset.v; save(); renderSettings(); analyseRec();
   });
-  $('ctl-edo').addEventListener('change', (e) => { S.edo = Number(e.target.value); if (!useMine()) S.step = 0; save(); renderSettings(); setTarget(S.step); });
-  $('ctl-root').addEventListener('change', (e) => { S.root = Number(e.target.value); save(); renderSettings(); renderTarget(); analyseRec(); });
-  $('ctl-oct').addEventListener('change', (e) => { S.rootOct = Number(e.target.value); save(); renderSettings(); renderTarget(); analyseRec(); });
+  $('ctl-edo').addEventListener('change', (e) => { S.edo = Number(e.target.value); scaleChanged(false); });
+  $('ctl-root').addEventListener('change', (e) => {
+    if (e.target.value === 'sung') S.rootSung = true;
+    else { S.rootSung = false; S.root = Number(e.target.value); }
+    scaleChanged(true);
+    analyseRec();
+  });
+  $('ctl-oct').addEventListener('change', (e) => { S.rootOct = Number(e.target.value); scaleChanged(true); analyseRec(); });
   $('ctl-octfree').addEventListener('change', (e) => { S.octFree = e.target.checked; save(); });
   $('ctl-gate').addEventListener('input', (e) => { S.gate = Number(e.target.value); $('gate-out').textContent = `${S.gate} dBFS`; save(); });
 
@@ -1282,6 +1377,7 @@
     }
   });
 
+  buildScale();
   initSettings();
   renderAll();
   renderMicButton();

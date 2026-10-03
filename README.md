@@ -23,17 +23,25 @@ einer halben Minute.
 ## Was die App kann
 
 **Ton treffen**
-- Ziel aus einem Raster (5- bis 72-EDO, Grundton frei wählbar) oder aus der eigenen Skala
+- Skala und Grundton direkt einstellbar:
+  - alle Schritte eines Rasters (5- bis 72-EDO)
+  - eine Vorlage aus dem Mikrotonalen Synth, etwa Mavila [7], Maqam Rast oder Zarlino
+  - die eigene, gesungene Skala, wie gesungen oder auf einen anderen Grundton verschoben
+- Grundton: Tonname plus Oktave
 - Ziel anhören. Solange der Bezugston klingt, misst die App nicht, damit sie nicht den
   Lautsprecher misst.
-- Abweichung live in Cent, als Zahl und als Nadel. Standard ist die **ruhige Anzeige**:
-  - Die Tonhöhe ist mit 0.3 s Zeitkonstante gedämpft.
-  - Die Zahl ändert sich höchstens viermal pro Sekunde.
+- Eine senkrechte **Leiter** über ±150 ¢ um das Ziel, oben ist höher. Sie zeigt den
+  Zielbereich, die Nachbarstufen der Skala und die 12-TET-Lagen.
+- Standard ist die **ruhige Anzeige**. Die Ruhe kommt aus dem Maßstab, nicht aus starker
+  Glättung:
+  - Der weite Maßstab hält kleine Schwankungen klein.
+  - Im Zielbereich steht nur „im Ziel“, keine Zahl.
   - Der Zielbereich hat eine Hysterese.
-  - Kurze Aussetzer bis 0.35 s werden überbrückt.
+  - Geglättet wird nur kurz: Median über 0.1 s, dann 0.12 s Zeitkonstante.
 
-  Ohne diese Dämpfung regelt man mit der eigenen Reaktionszeit gegen Rauschen und
-  Vibrato an und pendelt um das Ziel. Die direkte Anzeige zeigt jeden Messwert.
+  Eine stark geglättete Anzeige läuft hinterher. Man korrigiert dann zu spät und schießt
+  über. Bei einem Sprung um 60 ¢ braucht die Anzeige 260 ms bis „im Bereich“, mit der
+  früheren Glättung (0.3 s) waren es 520 ms. Die direkte Anzeige zeigt jeden Messwert.
 - Rückmeldung **„Erst danach“**: Beim Singen zeigt die App nichts an. Sobald du
   absetzt, kommt das Ergebnis, also die Mitte des gehaltenen Tons ohne Einschwingen
   und Ausklang.
